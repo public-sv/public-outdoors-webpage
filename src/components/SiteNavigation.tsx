@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import butterfly from '../assets/public-butterfly.svg'
 import { gsap, useGSAP } from '../animation/gsap'
@@ -37,14 +37,13 @@ export function SiteNavigation({
   const butterflyImage = useRef<HTMLImageElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [mediaOpen, setMediaOpen] = useState(false)
-  const [suppressMenuTransition, setSuppressMenuTransition] = useState(false)
-  const previousHideButterfly = useRef(hideButterfly)
   const navigationId = useId().replace(/:/g, '')
   const menuId = `site-navigation-menu-${navigationId}`
   const mediaMenuId = `site-media-menu-${navigationId}`
   const [compact, setCompact] = useState(() =>
     window.matchMedia('(max-width: 900px)').matches,
   )
+  const butterflyHidden = hideButterfly || compact
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 900px)')
@@ -52,31 +51,6 @@ export function SiteNavigation({
     query.addEventListener('change', syncBreakpoint)
     return () => query.removeEventListener('change', syncBreakpoint)
   }, [])
-
-  useLayoutEffect(() => {
-    const isEnteringCompactLogoMode =
-      compact && previousHideButterfly.current && !hideButterfly
-
-    previousHideButterfly.current = hideButterfly
-
-    if (!isEnteringCompactLogoMode) return
-
-    setMenuOpen(false)
-    setMediaOpen(false)
-    setSuppressMenuTransition(true)
-
-    let releaseFrame = 0
-    const settleFrame = window.requestAnimationFrame(() => {
-      releaseFrame = window.requestAnimationFrame(() => {
-        setSuppressMenuTransition(false)
-      })
-    })
-
-    return () => {
-      window.cancelAnimationFrame(settleFrame)
-      if (releaseFrame) window.cancelAnimationFrame(releaseFrame)
-    }
-  }, [compact, hideButterfly])
 
   useEffect(() => {
     if (!menuOpen && !mediaOpen) return
@@ -139,7 +113,7 @@ export function SiteNavigation({
           { autoAlpha: 1, y: 0, duration: 0.55, ease: 'power3.out' },
         )
 
-      if (compact) {
+      if (compact && !butterflyHidden) {
         entrance
           .fromTo(
             button,
@@ -158,7 +132,7 @@ export function SiteNavigation({
             },
             0.05,
           )
-      } else {
+      } else if (!compact) {
         entrance.fromTo(
           button,
           { autoAlpha: 0, scale: 0.65, rotation: -18 },
@@ -281,16 +255,20 @@ export function SiteNavigation({
         gsap.killTweensOf([button, image])
       }
     },
-    { dependencies: [compact, revealed], scope: navigation, revertOnUpdate: true },
+    {
+      dependencies: [butterflyHidden, compact, revealed],
+      scope: navigation,
+      revertOnUpdate: true,
+    },
   )
 
   return (
     <nav
-      className={`site-nav${hideButterfly ? ' site-nav--without-butterfly' : ''}${
+      className={`site-nav${butterflyHidden ? ' site-nav--without-butterfly' : ''}${
         lightSurface ? ' site-nav--light-surface' : ''
       }${temporarilyHidden ? ' site-nav--temporarily-hidden' : ''}${
-        suppressMenuTransition ? ' site-nav--instant-menu' : ''
-      }${revealed && compact && (menuOpen || hideButterfly) ? ' is-open' : ''}${
+        revealed && compact && (menuOpen || butterflyHidden) ? ' is-open' : ''
+      }${
         mediaOpen ? ' is-media-open' : ''
       }`}
       aria-label="Navegación principal"
@@ -311,8 +289,8 @@ export function SiteNavigation({
         }
         aria-expanded={compact ? revealed && menuOpen : undefined}
         aria-controls={compact ? menuId : undefined}
-        tabIndex={revealed && !temporarilyHidden && !hideButterfly ? 0 : -1}
-        hidden={hideButterfly}
+        tabIndex={revealed && !temporarilyHidden && !butterflyHidden ? 0 : -1}
+        hidden={butterflyHidden}
         onClick={(event) => {
           if (compact) {
             event.preventDefault()

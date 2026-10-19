@@ -10,7 +10,7 @@ import { isIOSSafari } from '../platform/iosSafari'
 
 type IntroSceneProps = {
   onMaskStateChange?: (complete: boolean) => void
-  onMobileNavigationGapChange?: (hidden: boolean) => void
+  onNavigationToneChange?: (dark: boolean) => void
 }
 
 const PublicWordmark = () => (
@@ -31,7 +31,7 @@ const PublicWordmark = () => (
 
 export function IntroScene({
   onMaskStateChange,
-  onMobileNavigationGapChange,
+  onNavigationToneChange,
 }: IntroSceneProps) {
   const section = useRef<HTMLElement>(null)
   const mark = useRef<SVGGElement>(null)
@@ -61,20 +61,19 @@ export function IntroScene({
     (_context, contextSafe) => {
       const mobile = isMobileExperience()
       let maskComplete = false
-      let mobileNavigationHidden = false
+      let navigationDark = false
       const updateMaskState = (complete: boolean) => {
         if (maskComplete === complete) return
         maskComplete = complete
         onMaskStateChange?.(complete)
       }
-      const updateMobileNavigationGap = (hidden: boolean) => {
-        if (mobileNavigationHidden === hidden) return
-        mobileNavigationHidden = hidden
-        onMobileNavigationGapChange?.(hidden)
+      const updateNavigationTone = (dark: boolean) => {
+        if (navigationDark === dark) return
+        navigationDark = dark
+        onNavigationToneChange?.(dark)
       }
-
       onMaskStateChange?.(false)
-      onMobileNavigationGapChange?.(false)
+      onNavigationToneChange?.(false)
 
       if (prefersReducedMotion()) {
         gsap.set(veil.current, { autoAlpha: 0 })
@@ -91,6 +90,7 @@ export function IntroScene({
         const prelude = reducedPrelude.current
         const syncPreludeState = (showingPrelude: boolean) => {
           updateMaskState(!showingPrelude)
+          updateNavigationTone(!showingPrelude)
           setPageTone(showingPrelude ? '#f7f5ef' : '#07080b', true)
         }
 
@@ -503,15 +503,15 @@ export function IntroScene({
               const timelineTime = self.progress * duration
               const maskStart = mobileTimeline.labels.maskStart ?? 0
               const maskComplete = mobileTimeline.labels.maskComplete ?? 0
+              const maskMidpoint = maskStart + (maskComplete - maskStart) / 2
               const atStart = self.progress <= 0.001
               setPulseActive(atStart)
               setLogoButtonActive(atStart)
-              updateMobileNavigationGap(
-                timelineTime >= maskStart + 0.2 &&
-                  timelineTime < maskStart + 0.26,
-              )
               updateMaskState(
                 duration > 0 && timelineTime >= maskComplete,
+              )
+              updateNavigationTone(
+                duration > 0 && timelineTime >= maskMidpoint,
               )
               const shouldUseDarkTone = timelineTime > maskStart + 0.01
               if (shouldUseDarkTone === darkToneActive) return
@@ -791,7 +791,9 @@ export function IntroScene({
             setPerspectiveActive(self.progress <= 0.001)
             setLogoButtonActive(self.progress <= 0.001)
             const duration = timeline.duration()
-            updateMaskState(duration > 0 && self.progress >= 1.02 / duration)
+            const complete = duration > 0 && self.progress >= 1.02 / duration
+            updateMaskState(complete)
+            updateNavigationTone(complete)
             const stop = timeline.labels.outside / timeline.duration()
             // Keep Safari's browser edges cream only while the opening mask is
             // completely untouched. As soon as its animation starts, blend the
@@ -1023,7 +1025,7 @@ export function IntroScene({
       }
     },
     {
-      dependencies: [onMaskStateChange, onMobileNavigationGapChange],
+      dependencies: [onMaskStateChange, onNavigationToneChange],
       scope: section,
     },
   )

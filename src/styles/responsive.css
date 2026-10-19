@@ -424,7 +424,11 @@
     transition:
       opacity .3s ease,
       visibility .3s ease,
-      transform .45s cubic-bezier(.2, .8, .2, 1);
+      transform .45s cubic-bezier(.2, .8, .2, 1),
+      color .35s ease,
+      border-color .35s ease,
+      background-color .35s ease,
+      box-shadow .35s ease;
     box-sizing: border-box;
   }
 
@@ -456,10 +460,6 @@
     visibility: visible;
     transform: translateY(0) scale(1);
     pointer-events: auto;
-  }
-
-  .site-nav--instant-menu .site-nav__menu {
-    transition: none;
   }
 
   .site-nav__menu > button,
