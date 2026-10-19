@@ -45,11 +45,12 @@ export function GalleryScene() {
   }, [])
 
   const { contextSafe } = useGSAP(
-    () => {
+    (_context, contextSafe) => {
       if (prefersReducedMotion()) return
 
       const mobile = isMobileExperience()
       let removePointerTracker: (() => void) | undefined
+      let removeSignalInteractions: (() => void) | undefined
       const heading = section.current?.querySelector<HTMLElement>('.grid-heading')
       const headingLines = heading
         ? gsap.utils.toArray<HTMLElement>('.grid-heading__line > span', heading)
@@ -63,33 +64,126 @@ export function GalleryScene() {
 
       if (heading && headingBottom && headingSignal) {
         gsap.set(headingSignal, { autoAlpha: 1 })
-        gsap.set(headingSignals, { y: 0, scale: 0.74, autoAlpha: 0.42 })
+        gsap.set(headingSignals, { y: 0, scale: 0.8, autoAlpha: 0.28 })
 
-        const typingTimeline = gsap.timeline({
+        const signalTimeline = gsap.timeline({
           paused: true,
           repeat: -1,
-          repeatDelay: 0.16,
+          repeatDelay: 1.2,
         })
+        const signalPattern = [
+          { index: 1, start: 0.4, scale: 1.1, alpha: 0.84, rise: 1.2, fade: 1.5 },
+          { index: 2, start: 2.2, scale: 1.17, alpha: 0.92, rise: 1.35, fade: 1.65 },
+          { index: 0, start: 2.85, scale: 1.06, alpha: 0.72, rise: 1, fade: 1.35 },
+          { index: 0, start: 5.8, scale: 1.15, alpha: 0.9, rise: 1.3, fade: 1.55 },
+          { index: 1, start: 6.5, scale: 1.06, alpha: 0.74, rise: 1.05, fade: 1.4 },
+          { index: 2, start: 9.05, scale: 1.12, alpha: 0.86, rise: 1.25, fade: 1.6 },
+          { index: 1, start: 9.65, scale: 1.14, alpha: 0.9, rise: 1.15, fade: 1.5 },
+          { index: 0, start: 10.45, scale: 1.08, alpha: 0.78, rise: 0.95, fade: 1.35 },
+        ]
 
-        headingSignals.forEach((dot, index) => {
-          const start = index * 0.18
+        signalPattern.forEach(({ index, start, scale, alpha, rise, fade }) => {
+          const dot = headingSignals[index]
+          if (!dot) return
 
-          typingTimeline
+          signalTimeline
             .to(dot, {
-              y: -18,
-              scale: 1.08,
-              autoAlpha: 1,
-              duration: 0.28,
+              scale,
+              autoAlpha: alpha,
+              duration: rise,
               ease: 'power2.out',
             }, start)
             .to(dot, {
-              y: 0,
-              scale: 0.74,
-              autoAlpha: 0.42,
-              duration: 0.42,
-              ease: 'power2.inOut',
-            }, start + 0.22)
+              scale: 0.8,
+              autoAlpha: 0.28,
+              duration: fade,
+              ease: 'sine.inOut',
+            }, start + rise)
         })
+
+        let signalsShouldPlay = false
+        let activeSignal: HTMLAnchorElement | null = null
+
+        const pauseSignals = () => {
+          signalsShouldPlay = false
+          activeSignal = null
+          signalTimeline.pause()
+        }
+        const resumeSignals = () => {
+          signalsShouldPlay = true
+          if (!activeSignal) {
+            signalTimeline.play()
+          }
+        }
+        const activateSignal = contextSafe!((dot: HTMLAnchorElement) => {
+          activeSignal = dot
+          signalTimeline.pause()
+          gsap.to(dot, {
+            scale: 1.22,
+            autoAlpha: 1,
+            duration: 0.55,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          })
+          gsap.to(headingSignals.filter((signal) => signal !== dot), {
+            scale: 0.76,
+            autoAlpha: 0.16,
+            duration: 0.65,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          })
+        })
+        const releaseSignal = contextSafe!((dot: HTMLAnchorElement) => {
+          if (activeSignal !== dot) return
+          activeSignal = null
+          gsap.to(headingSignals, {
+            scale: 0.8,
+            autoAlpha: 0.28,
+            duration: 0.85,
+            ease: 'sine.inOut',
+            overwrite: 'auto',
+            onComplete: () => {
+              if (signalsShouldPlay && !activeSignal) {
+                signalTimeline.play()
+              }
+            },
+          })
+        })
+
+        const signalInteractions = headingSignals.map((dot) => {
+          const onPointerEnter = (event: PointerEvent) => {
+            if (event.pointerType !== 'touch') activateSignal(dot)
+          }
+          const onPointerLeave = (event: PointerEvent) => {
+            if (event.pointerType !== 'touch' && document.activeElement !== dot) {
+              releaseSignal(dot)
+            }
+          }
+          const onFocus = () => activateSignal(dot)
+          const onBlur = () => releaseSignal(dot)
+
+          dot.addEventListener('pointerenter', onPointerEnter)
+          dot.addEventListener('pointerleave', onPointerLeave)
+          dot.addEventListener('focus', onFocus)
+          dot.addEventListener('blur', onBlur)
+
+          return { dot, onPointerEnter, onPointerLeave, onFocus, onBlur }
+        })
+
+        removeSignalInteractions = () => {
+          signalInteractions.forEach((interaction) => {
+            interaction.dot.removeEventListener(
+              'pointerenter',
+              interaction.onPointerEnter,
+            )
+            interaction.dot.removeEventListener(
+              'pointerleave',
+              interaction.onPointerLeave,
+            )
+            interaction.dot.removeEventListener('focus', interaction.onFocus)
+            interaction.dot.removeEventListener('blur', interaction.onBlur)
+          })
+        }
 
         gsap
           .timeline({
@@ -103,16 +197,16 @@ export function GalleryScene() {
               once: mobile,
               onEnter: () => {
                 setPageTone('#171717', true)
-                typingTimeline.play()
+                resumeSignals()
               },
               onEnterBack: () => {
                 setPageTone('#171717', true)
-                typingTimeline.play()
+                resumeSignals()
               },
-              onLeave: () => typingTimeline.pause(),
+              onLeave: pauseSignals,
               onLeaveBack: () => {
                 setPageTone('#07080b', true)
-                typingTimeline.pause()
+                pauseSignals()
               },
             },
           })
@@ -149,9 +243,6 @@ export function GalleryScene() {
         )
 
         if (indoorSignal && outdoorSignal && innovacionesSignal) {
-          const pauseTyping = () => typingTimeline.pause()
-          const resumeTyping = () => typingTimeline.restart()
-
           if (canHandOffToCursor && ambient && ambientOrb) {
             const pointerPosition = {
               x: window.innerWidth * 0.52,
@@ -195,11 +286,11 @@ export function GalleryScene() {
                 scrub: 0.65,
                 invalidateOnRefresh: true,
                 onEnter: () => {
-                  pauseTyping()
+                  pauseSignals()
                   handoffTimeline.invalidate()
                 },
-                onEnterBack: pauseTyping,
-                onLeaveBack: resumeTyping,
+                onEnterBack: pauseSignals,
+                onLeaveBack: resumeSignals,
               },
             })
 
@@ -216,8 +307,8 @@ export function GalleryScene() {
               .fromTo(indoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 0.8,
+                autoAlpha: 0.28,
               }, {
                 x: () => -window.innerWidth * 0.18,
                 y: () => window.innerHeight * 0.34,
@@ -230,8 +321,8 @@ export function GalleryScene() {
               .fromTo(innovacionesSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 0.8,
+                autoAlpha: 0.28,
               }, {
                 x: () => window.innerWidth * 0.18,
                 y: () => window.innerHeight * 0.4,
@@ -244,8 +335,8 @@ export function GalleryScene() {
               .fromTo(outdoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 0.8,
+                autoAlpha: 0.28,
               }, {
                 x: outdoorTravelX,
                 y: outdoorTravelY,
@@ -276,9 +367,9 @@ export function GalleryScene() {
                 end: 'bottom 42%',
                 scrub: 0.45,
                 invalidateOnRefresh: true,
-                onEnter: pauseTyping,
-                onEnterBack: pauseTyping,
-                onLeaveBack: resumeTyping,
+                onEnter: pauseSignals,
+                onEnterBack: pauseSignals,
+                onLeaveBack: resumeSignals,
               },
             })
 
@@ -295,8 +386,8 @@ export function GalleryScene() {
               .fromTo(outdoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 0.8,
+                autoAlpha: 0.28,
               }, {
                 x: () => -window.innerWidth * 0.08,
                 y: () => window.innerHeight * 0.22,
@@ -309,8 +400,8 @@ export function GalleryScene() {
               .fromTo(indoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 0.8,
+                autoAlpha: 0.28,
               }, {
                 y: () => window.innerHeight * 0.27,
                 scale: 0.32,
@@ -322,8 +413,8 @@ export function GalleryScene() {
               .fromTo(innovacionesSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 0.8,
+                autoAlpha: 0.28,
               }, {
                 x: () => window.innerWidth * 0.08,
                 y: () => window.innerHeight * 0.31,
@@ -423,7 +514,10 @@ export function GalleryScene() {
         }
       })
 
-      return () => removePointerTracker?.()
+      return () => {
+        removePointerTracker?.()
+        removeSignalInteractions?.()
+      }
     },
     { scope: section },
   )
