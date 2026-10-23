@@ -260,13 +260,14 @@ export function PurposeScene() {
           0,
         )
         .to({}, { duration: 0.45 })
+        .addLabel('questionToStatement')
         .to(question.current, {
           autoAlpha: 0,
           xPercent: -10,
           scale: 0.97,
           duration: 0.55,
-          ease: 'power3.in',
-        })
+          ease: 'sine.inOut',
+        }, 'questionToStatement')
         // Camera position two — pan right and move slightly closer.
         .to(
           ambient.current,
@@ -277,7 +278,7 @@ export function PurposeScene() {
             duration: 1.05,
             ease: 'sine.inOut',
           },
-          '<',
+          'questionToStatement',
         )
         .to(
           '.purpose-glow--blue-main',
@@ -288,7 +289,7 @@ export function PurposeScene() {
             duration: 1.05,
             ease: 'sine.inOut',
           },
-          '<',
+          'questionToStatement',
         )
         .to(
           '.purpose-glow--green-main',
@@ -299,7 +300,7 @@ export function PurposeScene() {
             duration: 1.08,
             ease: 'sine.inOut',
           },
-          '<',
+          'questionToStatement',
         )
         .to(
           '.purpose-glow--red-accent',
@@ -310,11 +311,16 @@ export function PurposeScene() {
             duration: 1.04,
             ease: 'sine.inOut',
           },
-          '<',
+          'questionToStatement',
         )
 
-        // Act two — measured vertical convergence.
-        .set(statement.current, { autoAlpha: 1 })
+        // Act two — begin before the question fully leaves so the viewport
+        // always retains a visible message between stages.
+        .set(
+          statement.current,
+          { autoAlpha: 1 },
+          'questionToStatement+=0.26',
+        )
         .fromTo(
           statement.current,
           { scale: 0.9, yPercent: 8 },
@@ -324,6 +330,7 @@ export function PurposeScene() {
             duration: 0.7,
             ease: 'expo.out',
           },
+          'questionToStatement+=0.26',
         )
         .to(
           '.purpose-statement__word',
@@ -334,16 +341,17 @@ export function PurposeScene() {
             stagger: 0.055,
             ease: 'power4.out',
           },
-          '<',
+          'questionToStatement+=0.26',
         )
         .to({}, { duration: 0.5 })
+        .addLabel('statementToAction')
         .to(statement.current, {
           autoAlpha: 0,
           yPercent: -12,
           scale: 0.98,
           duration: 0.6,
-          ease: 'power3.in',
-        })
+          ease: 'sine.inOut',
+        }, 'statementToAction')
         // Camera position three — pan across the same canvas and pull back.
         .to(
           ambient.current,
@@ -354,7 +362,7 @@ export function PurposeScene() {
             duration: 1.08,
             ease: 'sine.inOut',
           },
-          '<',
+          'statementToAction',
         )
         .to(
           '.purpose-glow--blue-main',
@@ -365,7 +373,7 @@ export function PurposeScene() {
             duration: 1.08,
             ease: 'sine.inOut',
           },
-          '<',
+          'statementToAction',
         )
         .to(
           '.purpose-glow--green-main',
@@ -376,7 +384,7 @@ export function PurposeScene() {
             duration: 1.1,
             ease: 'sine.inOut',
           },
-          '<',
+          'statementToAction',
         )
         .to(
           '.purpose-glow--red-accent',
@@ -387,18 +395,27 @@ export function PurposeScene() {
             duration: 1.06,
             ease: 'sine.inOut',
           },
-          '<',
+          'statementToAction',
         )
 
-        // Act three — direct call-to-action.
-        .set(action.current, { autoAlpha: 1 })
-        .to('.purpose-action__word--lead > span', {
-          yPercent: 0,
-          scale: 1,
-          autoAlpha: 1,
-          duration: 0.72,
-          ease: 'back.out(1.18)',
-        })
+        // Act three — overlap the incoming call-to-action with the outgoing
+        // statement instead of leaving an empty interval between them.
+        .set(
+          action.current,
+          { autoAlpha: 1 },
+          'statementToAction+=0.28',
+        )
+        .to(
+          '.purpose-action__word--lead > span',
+          {
+            yPercent: 0,
+            scale: 1,
+            autoAlpha: 1,
+            duration: 0.72,
+            ease: 'back.out(1.18)',
+          },
+          'statementToAction+=0.28',
+        )
         .to(
           '.purpose-action__word--support > span',
           {

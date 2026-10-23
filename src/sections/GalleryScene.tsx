@@ -45,11 +45,12 @@ export function GalleryScene() {
   }, [])
 
   const { contextSafe } = useGSAP(
-    () => {
+    (_context, contextSafe) => {
       if (prefersReducedMotion()) return
 
       const mobile = isMobileExperience()
       let removePointerTracker: (() => void) | undefined
+      let removeSignalInteractions: (() => void) | undefined
       const heading = section.current?.querySelector<HTMLElement>('.grid-heading')
       const headingLines = heading
         ? gsap.utils.toArray<HTMLElement>('.grid-heading__line > span', heading)
@@ -63,33 +64,79 @@ export function GalleryScene() {
 
       if (heading && headingBottom && headingSignal) {
         gsap.set(headingSignal, { autoAlpha: 1 })
-        gsap.set(headingSignals, { y: 0, scale: 0.74, autoAlpha: 0.42 })
+        gsap.set(headingSignals, { y: 0, scale: 1, autoAlpha: 1 })
 
-        const typingTimeline = gsap.timeline({
-          paused: true,
-          repeat: -1,
-          repeatDelay: 0.16,
+        let activeSignal: HTMLAnchorElement | null = null
+
+        const pauseSignals = () => {
+          activeSignal = null
+        }
+        const resumeSignals = () => {
+          gsap.set(headingSignal, { autoAlpha: 1 })
+        }
+        const activateSignal = contextSafe!((dot: HTMLAnchorElement) => {
+          activeSignal = dot
+          gsap.to(dot, {
+            scale: 1.22,
+            autoAlpha: 1,
+            duration: 0.55,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          })
+          gsap.to(headingSignals.filter((signal) => signal !== dot), {
+            scale: 0.76,
+            autoAlpha: 0.16,
+            duration: 0.65,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          })
+        })
+        const releaseSignal = contextSafe!((dot: HTMLAnchorElement) => {
+          if (activeSignal !== dot) return
+          activeSignal = null
+          gsap.to(headingSignals, {
+            scale: 1,
+            autoAlpha: 1,
+            duration: 0.85,
+            ease: 'sine.inOut',
+            overwrite: 'auto',
+          })
         })
 
-        headingSignals.forEach((dot, index) => {
-          const start = index * 0.18
+        const signalInteractions = headingSignals.map((dot) => {
+          const onPointerEnter = (event: PointerEvent) => {
+            if (event.pointerType !== 'touch') activateSignal(dot)
+          }
+          const onPointerLeave = (event: PointerEvent) => {
+            if (event.pointerType !== 'touch' && document.activeElement !== dot) {
+              releaseSignal(dot)
+            }
+          }
+          const onFocus = () => activateSignal(dot)
+          const onBlur = () => releaseSignal(dot)
 
-          typingTimeline
-            .to(dot, {
-              y: -18,
-              scale: 1.08,
-              autoAlpha: 1,
-              duration: 0.28,
-              ease: 'power2.out',
-            }, start)
-            .to(dot, {
-              y: 0,
-              scale: 0.74,
-              autoAlpha: 0.42,
-              duration: 0.42,
-              ease: 'power2.inOut',
-            }, start + 0.22)
+          dot.addEventListener('pointerenter', onPointerEnter)
+          dot.addEventListener('pointerleave', onPointerLeave)
+          dot.addEventListener('focus', onFocus)
+          dot.addEventListener('blur', onBlur)
+
+          return { dot, onPointerEnter, onPointerLeave, onFocus, onBlur }
         })
+
+        removeSignalInteractions = () => {
+          signalInteractions.forEach((interaction) => {
+            interaction.dot.removeEventListener(
+              'pointerenter',
+              interaction.onPointerEnter,
+            )
+            interaction.dot.removeEventListener(
+              'pointerleave',
+              interaction.onPointerLeave,
+            )
+            interaction.dot.removeEventListener('focus', interaction.onFocus)
+            interaction.dot.removeEventListener('blur', interaction.onBlur)
+          })
+        }
 
         gsap
           .timeline({
@@ -103,16 +150,19 @@ export function GalleryScene() {
               once: mobile,
               onEnter: () => {
                 setPageTone('#171717', true)
-                typingTimeline.play()
+                resumeSignals()
               },
               onEnterBack: () => {
                 setPageTone('#171717', true)
-                typingTimeline.play()
+                resumeSignals()
               },
-              onLeave: () => typingTimeline.pause(),
+              onLeave: pauseSignals,
               onLeaveBack: () => {
                 setPageTone('#07080b', true)
-                typingTimeline.pause()
+                pauseSignals()
+              },
+              onRefresh: (self) => {
+                if (self.isActive) resumeSignals()
               },
             },
           })
@@ -149,9 +199,6 @@ export function GalleryScene() {
         )
 
         if (indoorSignal && outdoorSignal && innovacionesSignal) {
-          const pauseTyping = () => typingTimeline.pause()
-          const resumeTyping = () => typingTimeline.restart()
-
           if (canHandOffToCursor && ambient && ambientOrb) {
             const pointerPosition = {
               x: window.innerWidth * 0.52,
@@ -195,11 +242,11 @@ export function GalleryScene() {
                 scrub: 0.65,
                 invalidateOnRefresh: true,
                 onEnter: () => {
-                  pauseTyping()
+                  pauseSignals()
                   handoffTimeline.invalidate()
                 },
-                onEnterBack: pauseTyping,
-                onLeaveBack: resumeTyping,
+                onEnterBack: pauseSignals,
+                onLeaveBack: resumeSignals,
               },
             })
 
@@ -216,8 +263,8 @@ export function GalleryScene() {
               .fromTo(indoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => -window.innerWidth * 0.18,
                 y: () => window.innerHeight * 0.34,
@@ -230,8 +277,8 @@ export function GalleryScene() {
               .fromTo(innovacionesSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => window.innerWidth * 0.18,
                 y: () => window.innerHeight * 0.4,
@@ -244,8 +291,8 @@ export function GalleryScene() {
               .fromTo(outdoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: outdoorTravelX,
                 y: outdoorTravelY,
@@ -276,9 +323,9 @@ export function GalleryScene() {
                 end: 'bottom 42%',
                 scrub: 0.45,
                 invalidateOnRefresh: true,
-                onEnter: pauseTyping,
-                onEnterBack: pauseTyping,
-                onLeaveBack: resumeTyping,
+                onEnter: pauseSignals,
+                onEnterBack: pauseSignals,
+                onLeaveBack: resumeSignals,
               },
             })
 
@@ -295,8 +342,8 @@ export function GalleryScene() {
               .fromTo(outdoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => -window.innerWidth * 0.08,
                 y: () => window.innerHeight * 0.22,
@@ -309,8 +356,8 @@ export function GalleryScene() {
               .fromTo(indoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 y: () => window.innerHeight * 0.27,
                 scale: 0.32,
@@ -322,8 +369,8 @@ export function GalleryScene() {
               .fromTo(innovacionesSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.74,
-                autoAlpha: 0.42,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => window.innerWidth * 0.08,
                 y: () => window.innerHeight * 0.31,
@@ -423,7 +470,10 @@ export function GalleryScene() {
         }
       })
 
-      return () => removePointerTracker?.()
+      return () => {
+        removePointerTracker?.()
+        removeSignalInteractions?.()
+      }
     },
     { scope: section },
   )
@@ -1152,17 +1202,23 @@ export function GalleryScene() {
             href="#outdoor-gallery"
             aria-label="Ir a la categoría Outdoor"
             onClick={(event) => goToCollection(event, 'outdoor')}
-          />
+          >
+            <i className="grid-heading__signal-dot" aria-hidden="true" />
+          </a>
           <a
             href="#indoor-gallery"
             aria-label="Ir a la categoría Indoor"
             onClick={(event) => goToCollection(event, 'indoor')}
-          />
+          >
+            <i className="grid-heading__signal-dot" aria-hidden="true" />
+          </a>
           <a
             href="#innovaciones-gallery"
             aria-label="Ir a la categoría Innovaciones"
             onClick={(event) => goToCollection(event, 'innovaciones')}
-          />
+          >
+            <i className="grid-heading__signal-dot" aria-hidden="true" />
+          </a>
         </nav>
 
         <div className="grid-heading__bottom">

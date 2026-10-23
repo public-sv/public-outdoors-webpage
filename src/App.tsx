@@ -24,7 +24,7 @@ import './App.css'
 function HomePage() {
   const [contactOpen, setContactOpen] = useState(false)
   const [navigationRevealed, setNavigationRevealed] = useState(false)
-  const [mobileNavigationGap, setMobileNavigationGap] = useState(false)
+  const [navigationDark, setNavigationDark] = useState(false)
 
   const handleMaskStateChange = useCallback((complete: boolean) => {
     setNavigationRevealed(complete)
@@ -55,8 +55,7 @@ function HomePage() {
       <SiteNavigation
         revealed
         hideButterfly={!navigationRevealed}
-        lightSurface={!navigationRevealed}
-        temporarilyHidden={mobileNavigationGap}
+        lightSurface={!navigationDark}
         onContact={() => setContactOpen(true)}
         onMedia={scrollToMedia}
       />
@@ -64,7 +63,7 @@ function HomePage() {
       <main id="hero">
         <IntroScene
           onMaskStateChange={handleMaskStateChange}
-          onMobileNavigationGapChange={setMobileNavigationGap}
+          onNavigationToneChange={setNavigationDark}
         />
         <GalleryScene />
         <ImpactScene />

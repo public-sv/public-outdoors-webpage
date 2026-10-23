@@ -32,21 +32,21 @@ export const projectCollections: ProjectCollection[] = [
     projects: [
       {
         id: '04',
-        title: 'Parada de buses',
+        title: 'Paradas de buses',
         image: outdoorOne,
-        alt: 'Parada de buses con publicidad de Coca-Cola en San Salvador',
+        alt: 'Paradas de buses con publicidad de Coca-Cola en San Salvador',
       },
       {
         id: '05',
-        title: 'Valla fija',
+        title: 'Vallas fijas',
         image: outdoorTwo,
-        alt: 'Valla publicitaria de gran formato junto a una vía de San Salvador',
+        alt: 'Vallas publicitarias de gran formato junto a una vía de San Salvador',
       },
       {
         id: '06',
-        title: 'Pantalla digital',
+        title: 'Pantallas digitales',
         image: outdoorThree,
-        alt: 'Pantalla digital y banderola publicitaria junto a una vía urbana',
+        alt: 'Pantallas digitales y banderolas publicitarias junto a una vía urbana',
       },
     ],
   },
@@ -54,25 +54,25 @@ export const projectCollections: ProjectCollection[] = [
     id: 'indoor',
     label: 'INDOOR',
     description:
-      'Presencia estratégica en espacios donde las personas esperan, compran y se conectan.',
+      'Presencias estratégicas en espacios donde las personas esperan, compran y se conectan.',
     projects: [
       {
         id: '01',
-        title: 'LED Ramblas',
+        title: 'Pantallas LED Las Ramblas',
         image: indoorOne,
-        alt: 'Pantalla publicitaria digital dentro de un centro comercial',
+        alt: 'Pantallas LED publicitarias digitales dentro de un centro comercial ',
       },
       {
         id: '02',
-        title: 'Cilindro Digital Ramblas',
+        title: 'Cilindros Digitales Las Ramblas',
         image: indoorTwo,
-        alt: 'Cilindro publicitario digital en un centro comercial',
+        alt: 'Cilindros publicitarios digitales en un centro comercial',
       },
       {
         id: '03',
-        title: 'Cilindro Fijo Ramblas',
+        title: 'Cilindros Fijos Las Ramblas',
         image: indoorThree,
-        alt: 'Publicidad indoor de Public Outdoors en un centro comercial',
+        alt: 'Cilindros publicitarios fijos en un centro comercial',
       },
     ],
   },
@@ -84,9 +84,9 @@ export const projectCollections: ProjectCollection[] = [
     projects: [
       {
         id: '07',
-        title: 'Innovaciones',
+        title: 'Innovacion Las Ramblas',
         image: innovationsOne,
-        alt: 'Instalación publicitaria innovadora de Burger King',
+        alt: 'Instalación publicitaria innovadora de Wendys'
       },
     ],
   },
