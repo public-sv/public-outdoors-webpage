@@ -115,6 +115,14 @@
   border-radius: 50%;
   background: radial-gradient(ellipse, rgb(247 245 239 / 6%), rgb(247 245 239 / 2%) 42%, transparent 72%);
   filter: blur(12px);
+  pointer-events: none;
+}
+
+.grid-heading__signal-group {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  padding: clamp(.25rem, .5vw, .5rem);
 }
 
 .grid-heading__signal a {
@@ -135,33 +143,64 @@
   border-radius: inherit;
   opacity: .28;
   transform: scale(.8);
-  animation: gallery-signal-pulse 4.8s cubic-bezier(.45, 0, .2, 1) infinite;
   will-change: transform, opacity;
 }
 
 .grid-heading__signal a:nth-child(1) .grid-heading__signal-dot {
   background: #ff0109;
   box-shadow: 0 0 5rem rgb(255 1 9 / 34%);
-  animation-delay: -3.2s;
+  animation: gallery-signal-pulse-red 14s cubic-bezier(.45, 0, .2, 1) infinite;
 }
 
 .grid-heading__signal a:nth-child(2) .grid-heading__signal-dot {
   background: #00b0f4;
   box-shadow: 0 0 5rem rgb(0 176 244 / 30%);
-  animation-delay: 0s;
+  animation: gallery-signal-pulse-blue 14s cubic-bezier(.45, 0, .2, 1) infinite;
 }
 
 .grid-heading__signal a:nth-child(3) .grid-heading__signal-dot {
   background: #38d430;
   box-shadow: 0 0 5rem rgb(56 212 48 / 28%);
-  animation-delay: -1.6s;
+  animation: gallery-signal-pulse-green 14s cubic-bezier(.45, 0, .2, 1) infinite;
 }
 
-@keyframes gallery-signal-pulse {
-  0%, 100% { opacity: .28; transform: scale(.8); }
-  28% { opacity: .9; transform: scale(1.14); }
-  58% { opacity: .38; transform: scale(.86); }
-  76% { opacity: .7; transform: scale(1.04); }
+@keyframes gallery-signal-pulse-red {
+  0%, 20%, 37%, 41%, 62%, 75%, 91%, 100% {
+    opacity: .28;
+    transform: scale(.8);
+  }
+  28% { opacity: .72; transform: scale(1.06); }
+  51% { opacity: .9; transform: scale(1.15); }
+  81% { opacity: .78; transform: scale(1.08); }
+}
+
+@keyframes gallery-signal-pulse-blue {
+  0%, 3%, 22%, 46%, 64%, 69%, 88%, 100% {
+    opacity: .28;
+    transform: scale(.8);
+  }
+  11% { opacity: .84; transform: scale(1.1); }
+  54% { opacity: .74; transform: scale(1.06); }
+  77% { opacity: .9; transform: scale(1.14); }
+}
+
+@keyframes gallery-signal-pulse-green {
+  0%, 16%, 37%, 65%, 85%, 100% {
+    opacity: .28;
+    transform: scale(.8);
+  }
+  25% { opacity: .92; transform: scale(1.17); }
+  74% { opacity: .86; transform: scale(1.12); }
+}
+
+.grid-heading__signal.is-interacting .grid-heading__signal-dot {
+  animation-play-state: paused !important;
+  opacity: .28 !important;
+  transform: scale(.8) !important;
+}
+
+.grid-heading__signal.is-interacting a.is-active .grid-heading__signal-dot {
+  opacity: 1 !important;
 }
 
 .grid-heading__signal a:focus-visible {
@@ -170,7 +209,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .grid-heading__signal a:hover .grid-heading__signal-dot {
+  .grid-heading__signal a.is-active .grid-heading__signal-dot {
     filter: brightness(1.14);
   }
 }
