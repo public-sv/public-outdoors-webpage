@@ -296,6 +296,13 @@
   font-size: clamp(4.5rem, 8.5vw, 8.5rem);
 }
 
+@media (min-width: 901px) {
+  .collection--innovaciones .collection-heading__details p {
+    flex: 1;
+    max-width: none;
+  }
+}
+
 .collection-heading__details {
   width: min(100%, 31rem);
   display: flex;
@@ -519,7 +526,6 @@
   .project-card .card-visual {
     transform: translateZ(0);
     transition:
-      transform .62s cubic-bezier(.16, 1, .3, 1),
       border-color .46s ease,
       box-shadow .62s cubic-bezier(.16, 1, .3, 1);
   }
@@ -539,12 +545,11 @@
   .project-card:focus-within .card-visual {
     border-color: color-mix(in srgb, var(--collection-accent) 28%, transparent);
     box-shadow: 0 0 2.75rem color-mix(in srgb, var(--collection-accent) 12%, transparent);
-    transform: translateY(-.32rem) scale(1.012);
   }
 
   .project-card:hover .card-visual--image img,
   .project-card:focus-within .card-visual--image img {
-    transform: scale(1.035);
+    transform: scale(1.05);
   }
 }
 

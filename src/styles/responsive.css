@@ -1,5 +1,6 @@
 @media (prefers-reduced-motion: reduce) {
   .logo-play-button { display: none; }
+  .client-logo img { animation: none; }
   .scroll-cue i { animation: none; }
   .ambient-glow,
   .purpose-glow { animation: none; }
@@ -770,9 +771,7 @@
   .client-logo:nth-child(6n) { z-index: 1; left: -.04rem; transform: translateY(-.1rem) rotate(-2.6deg); }
   .client-logo:nth-child(3n + 2) { background: #efede4; }
   .client-logo:nth-child(4n + 3) { background: #fffdf5; }
-  .client-logo:nth-last-child(2) { grid-column: 2; }
-  .client-logo:last-child { grid-column: 3; }
-  .client-logo img { transform: scale(1.18); }
+  .client-logo__media { transform: scale(1.18); }
   .impact-track__end {
     width: 100%;
     min-height: min(50svh, 28rem);
@@ -993,6 +992,9 @@
   .card-visual,
   .project-card:nth-child(2) .card-visual,
   .project-card:nth-child(3) .card-visual,
+  .collection--outdoor .outdoor-card--one .card-visual,
+  .collection--outdoor .outdoor-card--two .card-visual,
+  .collection--outdoor .outdoor-card--three .card-visual,
   .collection-carousel__track.is-single-project .card-visual {
     height: min(61svh, 31rem);
     min-height: 23rem;
@@ -1459,7 +1461,7 @@
     transform: none !important;
   }
 
-  .client-logo img {
+  .client-logo__media {
     transform: scale(1.08);
   }
 

@@ -24,16 +24,16 @@ const formats = {
     title: 'Presencia que domina el recorrido.',
     description:
       'Pasarelas y vallas fijas ubicadas en vías estratégicas para construir alcance, frecuencia y recordación.',
-    products: ['Pasarela fija', 'Vallas fijas'],
+    products: ['Pasarelas fijas', 'Vallas fijas'],
     image: outdoorGranFormato,
-    alt: 'Pasarela publicitaria y vallas de gran formato sobre una vía de San Salvador',
+    alt: 'Pasarelas publicitarias y vallas de gran formato sobre una vía de San Salvador',
   },
   digital: {
     label: 'Digital',
     title: 'Historias que avanzan con la ciudad.',
     description:
       'Pasarelas digitales y pantallas triples que combinan movimiento, secuencia y escala para multiplicar el impacto.',
-    products: ['Pasarela digital', 'Pantalla digital triple'],
+    products: ['Pasarelas digitales', 'Pantallas digitales triples'],
     image: outdoorDigitalCorridor,
     alt: 'Corredor urbano con una red de pantallas digitales publicitarias',
   },
@@ -42,7 +42,7 @@ const formats = {
     title: 'Mensajes que acompañan el trayecto.',
     description:
       'Paradas de buses y banderolas que acercan tu marca a las personas en momentos cotidianos de espera y movilidad.',
-    products: ['Parada de buses', 'Banderolas'],
+    products: ['Paradas de buses', 'Banderolas'],
     image: streetFurniture.image!,
     alt: streetFurniture.alt ?? streetFurniture.title,
   },

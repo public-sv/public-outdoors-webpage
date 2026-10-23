@@ -1,8 +1,9 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { gsap, ScrollTrigger, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
 import { isMobileExperience } from '../animation/mobile'
 import { setPageTone } from '../animation/pageTone'
+import { clientLogoSections } from '../data/clientLogos'
 import { isIOSSafari } from '../platform/iosSafari'
 
 const metrics = [
@@ -24,15 +25,207 @@ const metrics = [
   },
 ]
 
-const clientLogos = Object.values(
-  import.meta.glob('../assets/clients/*.svg', {
-    eager: true,
-    import: 'default',
-    query: '?url',
-  }),
-) as string[]
+const CLIENT_LOGO_INITIAL_MIN_DELAY_MS = 300
+const CLIENT_LOGO_INITIAL_MAX_DELAY_MS = 4000
+const CLIENT_LOGO_MIN_DELAY_MS = 3000
+const CLIENT_LOGO_MAX_DELAY_MS = 6000
+const CLIENT_LOGOS_PER_ROW = clientLogoSections[0]?.slots ?? 0
+const clientLogoPositions = Array.from(
+  { length: CLIENT_LOGOS_PER_ROW },
+  (_, slotIndex) =>
+    clientLogoSections.map((_, sectionIndex) => ({ sectionIndex, slotIndex })),
+).flat()
 
-clientLogos.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+function ClientLogoGrid() {
+  const list = useRef<HTMLDivElement>(null)
+  const [activeLogos, setActiveLogos] = useState(() =>
+    clientLogoSections.map((section) =>
+      Array.from({ length: section.slots }, (_, index) => index),
+    ),
+  )
+
+  useGSAP((_context, contextSafe) => {
+    const rotatingPositions = clientLogoPositions.filter(
+      ({ sectionIndex }) => {
+        const section = clientLogoSections[sectionIndex]
+        return section.logos.length > section.slots
+      },
+    )
+
+    if (!list.current || rotatingPositions.length === 0) return
+
+    let rotationActive = false
+    const animations = new Set<gsap.core.Animation>()
+    const reducedMotion = prefersReducedMotion()
+
+    const changeLogo = contextSafe!(
+      (position: (typeof rotatingPositions)[number]) => {
+        setActiveLogos((current) => {
+          const next = current.map((row) => [...row])
+          const { sectionIndex, slotIndex } = position
+          const section = clientLogoSections[sectionIndex]
+          const visibleLogos = next[sectionIndex]
+          const hiddenLogos = section.logos
+            .map((_, index) => index)
+            .filter((index) => !visibleLogos.includes(index))
+          const replacement =
+            hiddenLogos[Math.floor(Math.random() * hiddenLogos.length)]
+
+          next[sectionIndex][slotIndex] = replacement
+          return next
+        })
+      },
+    )
+
+    const stopRotation = () => {
+      rotationActive = false
+      animations.forEach((animation) => animation.kill())
+      animations.clear()
+    }
+
+    const animatePosition = contextSafe!(
+      (position: (typeof rotatingPositions)[number]) => {
+        const positionId = `${position.sectionIndex}-${position.slotIndex}`
+        const card = list.current?.querySelector<HTMLElement>(
+          `[data-client-slot="${positionId}"]`,
+        )
+        const media = card?.querySelector<HTMLElement>('.client-logo__media')
+        const page = card?.querySelector<HTMLElement>('.client-logo__page-turn')
+
+        if (!card || !media || !page || reducedMotion) {
+          changeLogo(position)
+          if (rotationActive) schedulePosition(position)
+          return
+        }
+
+        const direction = Math.random() > 0.5 ? 1 : -1
+        const timeline = gsap.timeline({
+          onComplete: () => {
+            animations.delete(timeline)
+            if (rotationActive) schedulePosition(position)
+          },
+        })
+        animations.add(timeline)
+
+        timeline
+          .to(media, {
+            autoAlpha: 0,
+            duration: 0.22,
+            ease: 'power2.in',
+          })
+          .fromTo(
+            page,
+            { autoAlpha: 0, scaleX: 0.08, xPercent: direction * 42 },
+            {
+              autoAlpha: 0.7,
+              scaleX: 1,
+              xPercent: 0,
+              duration: 0.24,
+              ease: 'power2.inOut',
+            },
+            0.02,
+          )
+          .call(() => changeLogo(position), [], 0.2)
+          .set(media, { autoAlpha: 0 }, 0.2)
+          .to(
+            media,
+            {
+              autoAlpha: 1,
+              duration: 0.38,
+              ease: 'power2.out',
+            },
+            0.22,
+          )
+          .to(
+            page,
+            {
+              autoAlpha: 0,
+              scaleX: 1.12,
+              xPercent: direction * -28,
+              duration: 0.34,
+              ease: 'power2.out',
+            },
+            0.2,
+          )
+          .set([media, page], { clearProps: 'transform,opacity,visibility' })
+      },
+    )
+
+    const schedulePosition = contextSafe!(
+      (
+        position: (typeof rotatingPositions)[number],
+        initial = false,
+      ) => {
+        const delay = gsap.utils.random(
+          initial ? CLIENT_LOGO_INITIAL_MIN_DELAY_MS : CLIENT_LOGO_MIN_DELAY_MS,
+          initial ? CLIENT_LOGO_INITIAL_MAX_DELAY_MS : CLIENT_LOGO_MAX_DELAY_MS,
+          1,
+        ) / 1000
+        const delayedCall = gsap.delayedCall(delay, () => {
+          animations.delete(delayedCall)
+          if (!rotationActive) return
+          animatePosition(position)
+        })
+        animations.add(delayedCall)
+      },
+    )
+
+    const startRotation = contextSafe!(() => {
+      if (rotationActive) return
+      rotationActive = true
+      rotatingPositions.forEach((position) => {
+        schedulePosition(position, true)
+      })
+    })
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) startRotation()
+        else stopRotation()
+      },
+      { rootMargin: '15% 0px' },
+    )
+
+    observer.observe(list.current)
+
+    return () => {
+      observer.disconnect()
+      stopRotation()
+    }
+  }, { scope: list })
+
+  return (
+    <div
+      className="clients-list"
+      aria-label="Logotipos de nuestros clientes"
+      ref={list}
+    >
+      {clientLogoPositions.map(({ sectionIndex, slotIndex }) => {
+        const section = clientLogoSections[sectionIndex]
+        const logo = section.logos[activeLogos[sectionIndex][slotIndex]]
+
+        return (
+          <figure
+            className="client-logo"
+            key={`${section.id}-${slotIndex + 1}`}
+            data-client-slot={`${sectionIndex}-${slotIndex}`}
+          >
+            <span className="client-logo__media">
+              <img
+                src={logo.src}
+                alt={logo.alt}
+                loading="lazy"
+                decoding="async"
+                key={logo.file}
+              />
+            </span>
+            <span className="client-logo__page-turn" aria-hidden="true" />
+          </figure>
+        )
+      })}
+    </div>
+  )
+}
 
 export function ImpactScene() {
   const section = useRef<HTMLElement>(null)
@@ -163,7 +356,7 @@ export function ImpactScene() {
               duration: 0.58,
               stagger: {
                 each: 0.025,
-                from: 'random',
+                from: 'edges',
               },
               ease: 'back.out(1.45)',
               scrollTrigger: {
@@ -332,56 +525,48 @@ export function ImpactScene() {
         section.current,
       )
       const cardPulseAnimations = desktopClientLogos.map((logo, index) => {
-        const image = logo.querySelector('img')
+        const image = logo.querySelector('.client-logo__media')
         const restingRotation = Number(gsap.getProperty(logo, 'rotation')) || 0
-        const rotationNudge = index % 2 === 0 ? 1.25 : -1.25
+        const rotationNudge = index % 2 === 0 ? 0.65 : -0.65
         const timeline = gsap.timeline({ paused: true })
 
         timeline
           .to(logo, {
-            y: 3,
-            scaleX: 1.025,
-            scaleY: 0.965,
-            duration: 0.1,
-            ease: 'power2.in',
-          })
-          .to(logo, {
-            y: -9,
-            scaleX: 1.065,
-            scaleY: 1.085,
-            rotation: restingRotation + rotationNudge,
-            duration: 0.17,
-            ease: 'power3.out',
-          })
-          .to(logo, {
-            y: 1,
-            scaleX: 0.992,
+            y: 2,
+            scaleX: 1.012,
             scaleY: 0.985,
-            rotation: restingRotation - rotationNudge * 0.25,
-            duration: 0.12,
-            ease: 'power2.in',
+            duration: 0.16,
+            ease: 'power2.inOut',
+          })
+          .to(logo, {
+            y: -6,
+            scaleX: 1.03,
+            scaleY: 1.04,
+            rotation: restingRotation + rotationNudge,
+            duration: 0.28,
+            ease: 'power3.out',
           })
           .to(logo, {
             y: 0,
             scaleX: 1,
             scaleY: 1,
             rotation: restingRotation,
-            duration: 0.34,
-            ease: 'elastic.out(1, 0.52)',
+            duration: 0.44,
+            ease: 'back.out(1.25)',
           })
 
         if (image) {
           timeline
             .to(image, {
-              scale: 1.36,
-              duration: 0.18,
-              ease: 'power2.out',
-            }, 0.08)
+              scale: 1.32,
+              duration: 0.28,
+              ease: 'sine.out',
+            }, 0.1)
             .to(image, {
               scale: 1.28,
-              duration: 0.38,
-              ease: 'elastic.out(1, 0.55)',
-            }, 0.27)
+              duration: 0.42,
+              ease: 'power2.out',
+            }, 0.34)
         }
 
         return timeline
@@ -442,18 +627,7 @@ export function ImpactScene() {
           <p>Marcas que confían en nosotros</p>
           <strong>Nuestros clientes</strong>
         </div>
-        <div className="clients-list" aria-label="Logotipos de nuestros clientes">
-          {clientLogos.map((logo, index) => (
-            <figure className="client-logo" key={logo}>
-              <img
-                src={logo}
-                alt={`Cliente ${index + 1}`}
-                loading="lazy"
-                decoding="async"
-              />
-            </figure>
-          ))}
-        </div>
+        <ClientLogoGrid />
         <p className="impact-track__end" aria-hidden="true">
           Juntos llegamos más lejos.
         </p>

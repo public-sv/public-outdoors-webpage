@@ -9,16 +9,16 @@ import starbucksCupsImage from '../assets/images/innovations-showcase-starbucks-
 
 export const innovationShowcaseImages = [
   {
-    src: pepsiImage,
-    alt: 'Cilindro publicitario de Pepsi con una instalación tridimensional de lata y burbujas',
-  },
-  {
     src: starbucksSummerImage,
     alt: 'Cilindro digital de Starbucks con una instalación tridimensional de bebida helada',
   },
   {
-      src: starbucksElevatorsImage,
-      alt: 'Elevadores intervenidos con vasos de Starbucks',
+    src: starbucksElevatorsImage,
+    alt: 'Elevadores intervenidos con vasos de Starbucks',
+  },
+  {
+    src: pepsiImage,
+    alt: 'Cilindro publicitario de Pepsi con una instalación tridimensional de lata y burbujas',
   },
   {
     src: liptonChairImage,
