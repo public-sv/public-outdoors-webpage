@@ -20,7 +20,7 @@ export type ClientLogoSection = {
 }
 
 // Para agregar un cliente:
-// 1. Copia su SVG, PNG, WebP, JPG o AVIF a src/assets/clients.
+// 1. Copia su SVG, PNG, WebP, JPG o AVIF a public/clients.
 // 2. Agrega una entrada en uno de estos dos grupos.
 // Cada grupo alimenta exclusivamente su propia fila de 8 cajas, por lo que un
 // logo nunca se repite ni aparece en otra sección.
@@ -114,22 +114,6 @@ export const clientLogoGroups: ClientLogoGroup[] = [
   },
 ]
 
-const clientLogoAssets = import.meta.glob(
-  '../assets/clients/*.{svg,png,webp,jpg,jpeg,avif}',
-  {
-    eager: true,
-    import: 'default',
-    query: '?url',
-  },
-) as Record<string, string>
-
-const assetsByFilename = new Map(
-  Object.entries(clientLogoAssets).map(([path, src]) => [
-    path.split('/').at(-1) ?? path,
-    src,
-  ]),
-)
-
 const usedFiles = new Set<string>()
 
 export const clientLogoSections: ClientLogoSection[] = clientLogoGroups.map(
@@ -145,13 +129,8 @@ export const clientLogoSections: ClientLogoSection[] = clientLogoGroups.map(
         throw new Error(`El logo "${logo.file}" está repetido en el catálogo.`)
       }
 
-      const src = assetsByFilename.get(logo.file)
-      if (!src) {
-        throw new Error(`No se encontró el archivo de logo "${logo.file}".`)
-      }
-
       usedFiles.add(logo.file)
-      return { ...logo, src }
+      return { ...logo, src: `/clients/${logo.file}` }
     })
 
     return { id: group.id, slots: group.slots, logos }

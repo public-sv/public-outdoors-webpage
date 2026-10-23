@@ -8,6 +8,7 @@ import { projectCollections } from '../data/projects'
 import outdoorDigitalCorridor from '../assets/images/outdoor-digital-corridor.webp'
 import outdoorGranFormato from '../assets/images/outdoor-gran-formato.webp'
 import { CollectionPage } from './CollectionPage'
+import { assetUrl } from '../lib/assetUrl'
 
 interface OutdoorPageProps {
   modal?: boolean
@@ -25,7 +26,7 @@ const formats = {
     description:
       'Pasarelas y vallas fijas ubicadas en vías estratégicas para construir alcance, frecuencia y recordación.',
     products: ['Pasarelas fijas', 'Vallas fijas'],
-    image: outdoorGranFormato,
+    image: assetUrl(outdoorGranFormato),
     alt: 'Pasarelas publicitarias y vallas de gran formato sobre una vía de San Salvador',
   },
   digital: {
@@ -34,7 +35,7 @@ const formats = {
     description:
       'Pasarelas digitales y pantallas triples que combinan movimiento, secuencia y escala para multiplicar el impacto.',
     products: ['Pasarelas digitales', 'Pantallas digitales triples'],
-    image: outdoorDigitalCorridor,
+    image: assetUrl(outdoorDigitalCorridor),
     alt: 'Corredor urbano con una red de pantallas digitales publicitarias',
   },
   proximidad: {

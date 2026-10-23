@@ -7,7 +7,7 @@ export function PageMetadata() {
   useEffect(() => {
     const path = pathname.replace(/\/+$/, '') || '/'
     const page = pages[path] ?? notFound
-    const siteUrl = (import.meta.env.VITE_SITE_URL || '').replace(/\/$/, '')
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
     document.title = page.title
     const setMeta = (key: string, value: string, property = false) => {
       const attribute = property ? 'property' : 'name'
@@ -20,7 +20,7 @@ export function PageMetadata() {
       element.content = value
     }
     setMeta('description', page.description)
-    setMeta('robots', import.meta.env.VITE_ALLOW_INDEXING === 'true' && !page.noindex ? 'index, follow' : 'noindex, follow')
+    setMeta('robots', process.env.NEXT_PUBLIC_ALLOW_INDEXING === 'true' && !page.noindex ? 'index, follow' : 'noindex, follow')
     setMeta('og:title', page.title, true)
     setMeta('og:description', page.description, true)
     setMeta('twitter:title', page.title)

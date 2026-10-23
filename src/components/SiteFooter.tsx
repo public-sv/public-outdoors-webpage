@@ -1,5 +1,8 @@
-import butterflyLogo from '../assets/public-butterfly.svg'
+import butterflyLogoAsset from '../assets/public-butterfly.svg'
 import { Link } from 'react-router-dom'
+import { assetUrl } from '../lib/assetUrl'
+
+const butterflyLogo = assetUrl(butterflyLogoAsset)
 
 export function SiteFooter({ onContact }: { onContact: () => void }) {
   return (

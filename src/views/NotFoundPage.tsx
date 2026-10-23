@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import butterfly from '../assets/public-butterfly.svg'
+import butterflyAsset from '../assets/public-butterfly.svg'
+import { assetUrl } from '../lib/assetUrl'
 import { usePageTone } from '../hooks/usePageTone'
 
 export function NotFoundPage() {
+  const butterfly = assetUrl(butterflyAsset)
   usePageTone('#f7f5ef', false)
 
   useEffect(() => {

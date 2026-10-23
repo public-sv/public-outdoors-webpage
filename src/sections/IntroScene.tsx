@@ -3,10 +3,13 @@ import { gsap, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
 import { isMobileExperience } from '../animation/mobile'
 import { setPageTone } from '../animation/pageTone'
-import butterfly from '../assets/public-butterfly.svg'
+import butterflyAsset from '../assets/public-butterfly.svg'
+import { assetUrl } from '../lib/assetUrl'
 import { AmbientField } from '../components/AmbientField'
 import { BrandMask } from '../components/BrandMask'
 import { isIOSSafari } from '../platform/iosSafari'
+
+const butterfly = assetUrl(butterflyAsset)
 
 type IntroSceneProps = {
   onMaskStateChange?: (complete: boolean) => void
@@ -726,7 +729,7 @@ export function IntroScene({
       let lockedProgress: number | null = null
       let inputReady = true
       let stopAcknowledged = false
-      let quietTimer: ReturnType<typeof window.setTimeout> | undefined
+      let quietTimer: number | undefined
       const iosSafari = isIOSSafari()
 
       const markInputQuiet = () => {

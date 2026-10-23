@@ -10,12 +10,19 @@ import { createPortal } from 'react-dom'
 import { gsap, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
 import { isMobileExperience } from '../animation/mobile'
-import facebookIcon from '../assets/facebook-streamline.svg'
-import instagramIcon from '../assets/instagram-streamline.svg'
-import linkedinIcon from '../assets/linkedin-streamline.svg'
-import butterflyLogo from '../assets/public-butterfly.svg'
-import whatsappIcon from '../assets/whatsapp-streamline.svg'
+import facebookIconAsset from '../assets/facebook-streamline.svg'
+import instagramIconAsset from '../assets/instagram-streamline.svg'
+import linkedinIconAsset from '../assets/linkedin-streamline.svg'
+import butterflyLogoAsset from '../assets/public-butterfly.svg'
+import whatsappIconAsset from '../assets/whatsapp-streamline.svg'
+import { assetUrl } from '../lib/assetUrl'
 import { isSafari } from '../platform/iosSafari'
+
+const facebookIcon = assetUrl(facebookIconAsset)
+const instagramIcon = assetUrl(instagramIconAsset)
+const linkedinIcon = assetUrl(linkedinIconAsset)
+const butterflyLogo = assetUrl(butterflyLogoAsset)
+const whatsappIcon = assetUrl(whatsappIconAsset)
 
 type ContactCardProps = {
   onClose?: () => void
@@ -194,9 +201,7 @@ export function ContactCard({
   const closing = useRef(false)
   const tiltReady = useRef(false)
   const requestMotionAccess = useRef<() => void>(() => undefined)
-  const shareTimer = useRef<ReturnType<typeof window.setTimeout> | undefined>(
-    undefined,
-  )
+  const shareTimer = useRef<number | undefined>(undefined)
   const [shareState, setShareState] = useState<ShareState>('idle')
   const [motionAccess, setMotionAccess] = useState<MotionAccessState>('idle')
   const [whatsappOpen, setWhatsappOpen] = useState(false)
@@ -862,7 +867,7 @@ export function ContactCard({
     window.clearTimeout(shareTimer.current)
 
     try {
-      const assetUrl = `${import.meta.env.BASE_URL}public-contacto.png`
+      const assetUrl = '/public-contacto.png'
       const response = await fetch(assetUrl)
       if (!response.ok) throw new Error('Could not load the contact card image')
 

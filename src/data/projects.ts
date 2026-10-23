@@ -5,6 +5,7 @@ import innovationsOne from '../assets/images/innovations-1.webp'
 import outdoorOne from '../assets/images/outdoor-1.webp'
 import outdoorTwo from '../assets/images/outdoor-2.webp'
 import outdoorThree from '../assets/images/outdoor-3.webp'
+import { assetUrl } from '../lib/assetUrl'
 
 export type ProjectTone = 'red' | 'blue' | 'green'
 
@@ -33,19 +34,19 @@ export const projectCollections: ProjectCollection[] = [
       {
         id: '04',
         title: 'Paradas de buses',
-        image: outdoorOne,
+        image: assetUrl(outdoorOne),
         alt: 'Paradas de buses con publicidad de Coca-Cola en San Salvador',
       },
       {
         id: '05',
         title: 'Vallas fijas',
-        image: outdoorTwo,
+        image: assetUrl(outdoorTwo),
         alt: 'Vallas publicitarias de gran formato junto a una vía de San Salvador',
       },
       {
         id: '06',
         title: 'Pantallas digitales',
-        image: outdoorThree,
+        image: assetUrl(outdoorThree),
         alt: 'Pantallas digitales y banderolas publicitarias junto a una vía urbana',
       },
     ],
@@ -59,19 +60,19 @@ export const projectCollections: ProjectCollection[] = [
       {
         id: '01',
         title: 'Pantallas LED Las Ramblas',
-        image: indoorOne,
+        image: assetUrl(indoorOne),
         alt: 'Pantallas LED publicitarias digitales dentro de un centro comercial ',
       },
       {
         id: '02',
         title: 'Cilindros Digitales Las Ramblas',
-        image: indoorTwo,
+        image: assetUrl(indoorTwo),
         alt: 'Cilindros publicitarios digitales en un centro comercial',
       },
       {
         id: '03',
         title: 'Cilindros Fijos Las Ramblas',
-        image: indoorThree,
+        image: assetUrl(indoorThree),
         alt: 'Cilindros publicitarios fijos en un centro comercial',
       },
     ],
@@ -85,7 +86,7 @@ export const projectCollections: ProjectCollection[] = [
       {
         id: '07',
         title: 'Innovaciones Las Ramblas',
-        image: innovationsOne,
+        image: assetUrl(innovationsOne),
         alt: 'Instalación publicitaria innovadora de Wendys'
       },
     ],

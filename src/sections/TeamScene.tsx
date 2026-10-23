@@ -6,6 +6,7 @@ import erikaPortrait from '../assets/images/erika-2.webp'
 import irisPortrait from '../assets/images/iris-1.webp'
 import rosemaryPortrait from '../assets/images/rosmery-1.webp'
 import { SectionAmbient } from '../components/SectionAmbient'
+import { assetUrl } from '../lib/assetUrl'
 
 type TeamSceneProps = {
   onSurfaceChange?: (light: boolean) => void
@@ -35,7 +36,7 @@ const teamMembers = [
         'desarrollo de negocios. Me apasiona conectar con las personas, construir relaciones de\n' +
         'confianza y encontrar oportunidades que generen crecimiento. Disfruto los retos, aprender\n' +
         'constantemente y todo lo relacionado con ventas, comunicación y marcas.',
-    image: zaydaPortrait,
+    image: assetUrl(zaydaPortrait),
     accent: '#ff4b43',
   },
   {
@@ -45,7 +46,7 @@ const teamMembers = [
       'Soy creativa y amante de la publicidad. Me gusta construir relaciones cercanas y de\n' +
         'confianza con cada cliente para alcanzar juntos objetivos alineados con la estrategia de su\n' +
         'marca.',
-    image: irisPortrait,
+    image: assetUrl(irisPortrait),
     accent: '#00a7e8',
   },
   {
@@ -56,7 +57,7 @@ const teamMembers = [
         'ventas directas y estoy aquí para ayudarte a encontrar el espacio ideal para elevar tu\n' +
         'marca.\n' +
         '“Un buen anuncio cuenta una historia; yo te ayudo a escribir la tuya."',
-    image: rosemaryPortrait,
+    image: assetUrl(rosemaryPortrait),
     accent: '#30c82f',
   },
   {
@@ -66,7 +67,7 @@ const teamMembers = [
       'Como gerente general de PUBLIC, me apasiona trabajar junto a nuestro equipo para\n' +
         'encontrar oportunidades creativas y novedosas que aporten valor a las marcas de nuestros\n' +
         'clientes. Estamos siempre para elevar tu marca.',
-    image: erikaPortrait,
+    image: assetUrl(erikaPortrait),
     accent: '#ffb629',
   },
   // {

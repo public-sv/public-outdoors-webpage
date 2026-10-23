@@ -1,12 +1,12 @@
 [build]
   command = "npm run lint && npm run build"
-  publish = "dist"
+  publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "24"
+  NODE_VERSION = "24.22.1"
 
 [context.deploy-preview.environment]
-  VITE_ALLOW_INDEXING = "false"
+  NEXT_PUBLIC_ALLOW_INDEXING = "false"
 
 [context.branch-deploy.environment]
-  VITE_ALLOW_INDEXING = "false"
+  NEXT_PUBLIC_ALLOW_INDEXING = "false"

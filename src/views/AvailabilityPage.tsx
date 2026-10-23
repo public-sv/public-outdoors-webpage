@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import butterfly from '../assets/public-butterfly.svg'
+import butterflyAsset from '../assets/public-butterfly.svg'
 import { gsap, ScrollTrigger, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
 import { usePageTone } from '../hooks/usePageTone'
+import { assetUrl } from '../lib/assetUrl'
+
+const butterfly = assetUrl(butterflyAsset)
 
 interface AvailabilityPageProps {
   modal?: boolean

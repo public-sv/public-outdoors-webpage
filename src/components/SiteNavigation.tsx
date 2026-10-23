@@ -1,8 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import butterfly from '../assets/public-butterfly.svg'
+import butterflyAsset from '../assets/public-butterfly.svg'
 import { gsap, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
+import { assetUrl } from '../lib/assetUrl'
+
+const butterfly = assetUrl(butterflyAsset)
 
 type SiteNavigationProps = {
   revealed: boolean
