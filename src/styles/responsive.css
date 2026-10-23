@@ -4,6 +4,7 @@
   .scroll-cue i { animation: none; }
   .ambient-glow,
   .purpose-glow { animation: none; }
+  .grid-heading__signal-dot { animation: none; }
   .scroll-cue { display: none; }
   .scroll-cue i { animation: none; }
   .impact-section {

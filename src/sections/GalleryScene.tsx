@@ -64,60 +64,18 @@ export function GalleryScene() {
 
       if (heading && headingBottom && headingSignal) {
         gsap.set(headingSignal, { autoAlpha: 1 })
-        gsap.set(headingSignals, { y: 0, scale: 0.8, autoAlpha: 0.28 })
+        gsap.set(headingSignals, { y: 0, scale: 1, autoAlpha: 1 })
 
-        const signalTimeline = gsap.timeline({
-          paused: true,
-          repeat: -1,
-          repeatDelay: 1.2,
-        })
-        const signalPattern = [
-          { index: 1, start: 0.4, scale: 1.1, alpha: 0.84, rise: 1.2, fade: 1.5 },
-          { index: 2, start: 2.2, scale: 1.17, alpha: 0.92, rise: 1.35, fade: 1.65 },
-          { index: 0, start: 2.85, scale: 1.06, alpha: 0.72, rise: 1, fade: 1.35 },
-          { index: 0, start: 5.8, scale: 1.15, alpha: 0.9, rise: 1.3, fade: 1.55 },
-          { index: 1, start: 6.5, scale: 1.06, alpha: 0.74, rise: 1.05, fade: 1.4 },
-          { index: 2, start: 9.05, scale: 1.12, alpha: 0.86, rise: 1.25, fade: 1.6 },
-          { index: 1, start: 9.65, scale: 1.14, alpha: 0.9, rise: 1.15, fade: 1.5 },
-          { index: 0, start: 10.45, scale: 1.08, alpha: 0.78, rise: 0.95, fade: 1.35 },
-        ]
-
-        signalPattern.forEach(({ index, start, scale, alpha, rise, fade }) => {
-          const dot = headingSignals[index]
-          if (!dot) return
-
-          signalTimeline
-            .to(dot, {
-              scale,
-              autoAlpha: alpha,
-              duration: rise,
-              ease: 'power2.out',
-            }, start)
-            .to(dot, {
-              scale: 0.8,
-              autoAlpha: 0.28,
-              duration: fade,
-              ease: 'sine.inOut',
-            }, start + rise)
-        })
-
-        let signalsShouldPlay = false
         let activeSignal: HTMLAnchorElement | null = null
 
         const pauseSignals = () => {
-          signalsShouldPlay = false
           activeSignal = null
-          signalTimeline.pause()
         }
         const resumeSignals = () => {
-          signalsShouldPlay = true
-          if (!activeSignal) {
-            signalTimeline.play()
-          }
+          gsap.set(headingSignal, { autoAlpha: 1 })
         }
         const activateSignal = contextSafe!((dot: HTMLAnchorElement) => {
           activeSignal = dot
-          signalTimeline.pause()
           gsap.to(dot, {
             scale: 1.22,
             autoAlpha: 1,
@@ -137,16 +95,11 @@ export function GalleryScene() {
           if (activeSignal !== dot) return
           activeSignal = null
           gsap.to(headingSignals, {
-            scale: 0.8,
-            autoAlpha: 0.28,
+            scale: 1,
+            autoAlpha: 1,
             duration: 0.85,
             ease: 'sine.inOut',
             overwrite: 'auto',
-            onComplete: () => {
-              if (signalsShouldPlay && !activeSignal) {
-                signalTimeline.play()
-              }
-            },
           })
         })
 
@@ -207,6 +160,9 @@ export function GalleryScene() {
               onLeaveBack: () => {
                 setPageTone('#07080b', true)
                 pauseSignals()
+              },
+              onRefresh: (self) => {
+                if (self.isActive) resumeSignals()
               },
             },
           })
@@ -307,8 +263,8 @@ export function GalleryScene() {
               .fromTo(indoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.8,
-                autoAlpha: 0.28,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => -window.innerWidth * 0.18,
                 y: () => window.innerHeight * 0.34,
@@ -321,8 +277,8 @@ export function GalleryScene() {
               .fromTo(innovacionesSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.8,
-                autoAlpha: 0.28,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => window.innerWidth * 0.18,
                 y: () => window.innerHeight * 0.4,
@@ -335,8 +291,8 @@ export function GalleryScene() {
               .fromTo(outdoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.8,
-                autoAlpha: 0.28,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: outdoorTravelX,
                 y: outdoorTravelY,
@@ -386,8 +342,8 @@ export function GalleryScene() {
               .fromTo(outdoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.8,
-                autoAlpha: 0.28,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => -window.innerWidth * 0.08,
                 y: () => window.innerHeight * 0.22,
@@ -400,8 +356,8 @@ export function GalleryScene() {
               .fromTo(indoorSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.8,
-                autoAlpha: 0.28,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 y: () => window.innerHeight * 0.27,
                 scale: 0.32,
@@ -413,8 +369,8 @@ export function GalleryScene() {
               .fromTo(innovacionesSignal, {
                 x: 0,
                 y: 0,
-                scale: 0.8,
-                autoAlpha: 0.28,
+                scale: 1,
+                autoAlpha: 1,
               }, {
                 x: () => window.innerWidth * 0.08,
                 y: () => window.innerHeight * 0.31,
@@ -1246,17 +1202,23 @@ export function GalleryScene() {
             href="#outdoor-gallery"
             aria-label="Ir a la categoría Outdoor"
             onClick={(event) => goToCollection(event, 'outdoor')}
-          />
+          >
+            <i className="grid-heading__signal-dot" aria-hidden="true" />
+          </a>
           <a
             href="#indoor-gallery"
             aria-label="Ir a la categoría Indoor"
             onClick={(event) => goToCollection(event, 'indoor')}
-          />
+          >
+            <i className="grid-heading__signal-dot" aria-hidden="true" />
+          </a>
           <a
             href="#innovaciones-gallery"
             aria-label="Ir a la categoría Innovaciones"
             onClick={(event) => goToCollection(event, 'innovaciones')}
-          />
+          >
+            <i className="grid-heading__signal-dot" aria-hidden="true" />
+          </a>
         </nav>
 
         <div className="grid-heading__bottom">
