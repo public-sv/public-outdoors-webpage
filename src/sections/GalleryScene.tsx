@@ -57,35 +57,47 @@ export function GalleryScene() {
         : []
       const headingBottom = heading?.querySelector<HTMLElement>('.grid-heading__bottom')
       const headingSignal = heading?.querySelector<HTMLElement>('.grid-heading__signal')
+      const headingSignalGroup = heading?.querySelector<HTMLElement>(
+        '.grid-heading__signal-group',
+      )
       const headingSignals = heading
         ? gsap.utils.toArray<HTMLAnchorElement>('.grid-heading__signal a', heading)
         : []
       const collections = gsap.utils.toArray<HTMLElement>('.project-collection')
 
-      if (heading && headingBottom && headingSignal) {
+      if (heading && headingBottom && headingSignal && headingSignalGroup) {
         gsap.set(headingSignal, { autoAlpha: 1 })
         gsap.set(headingSignals, { y: 0, scale: 1, autoAlpha: 1 })
 
         let activeSignal: HTMLAnchorElement | null = null
 
+        const clearSignalInteraction = () => {
+          headingSignal.classList.remove('is-interacting')
+          headingSignals.forEach((signal) => signal.classList.remove('is-active'))
+        }
         const pauseSignals = () => {
           activeSignal = null
+          clearSignalInteraction()
         }
         const resumeSignals = () => {
           gsap.set(headingSignal, { autoAlpha: 1 })
         }
         const activateSignal = contextSafe!((dot: HTMLAnchorElement) => {
           activeSignal = dot
+          headingSignal.classList.add('is-interacting')
+          headingSignals.forEach((signal) => {
+            signal.classList.toggle('is-active', signal === dot)
+          })
           gsap.to(dot, {
-            scale: 1.22,
+            scale: 1.38,
             autoAlpha: 1,
             duration: 0.55,
             ease: 'power2.out',
             overwrite: 'auto',
           })
           gsap.to(headingSignals.filter((signal) => signal !== dot), {
-            scale: 0.76,
-            autoAlpha: 0.16,
+            scale: 1,
+            autoAlpha: 1,
             duration: 0.65,
             ease: 'power2.out',
             overwrite: 'auto',
@@ -94,6 +106,7 @@ export function GalleryScene() {
         const releaseSignal = contextSafe!((dot: HTMLAnchorElement) => {
           if (activeSignal !== dot) return
           activeSignal = null
+          clearSignalInteraction()
           gsap.to(headingSignals, {
             scale: 1,
             autoAlpha: 1,
@@ -107,31 +120,44 @@ export function GalleryScene() {
           const onPointerEnter = (event: PointerEvent) => {
             if (event.pointerType !== 'touch') activateSignal(dot)
           }
-          const onPointerLeave = (event: PointerEvent) => {
-            if (event.pointerType !== 'touch' && document.activeElement !== dot) {
-              releaseSignal(dot)
-            }
-          }
           const onFocus = () => activateSignal(dot)
-          const onBlur = () => releaseSignal(dot)
+          const onBlur = (event: FocusEvent) => {
+            if (
+              event.relatedTarget instanceof Node &&
+              headingSignalGroup.contains(event.relatedTarget)
+            ) {
+              return
+            }
+            releaseSignal(dot)
+          }
 
           dot.addEventListener('pointerenter', onPointerEnter)
-          dot.addEventListener('pointerleave', onPointerLeave)
           dot.addEventListener('focus', onFocus)
           dot.addEventListener('blur', onBlur)
 
-          return { dot, onPointerEnter, onPointerLeave, onFocus, onBlur }
+          return { dot, onPointerEnter, onFocus, onBlur }
         })
 
+        const onSignalPointerLeave = (event: PointerEvent) => {
+          if (event.pointerType === 'touch' || !activeSignal) return
+          releaseSignal(activeSignal)
+        }
+
+        headingSignalGroup.addEventListener(
+          'pointerleave',
+          onSignalPointerLeave,
+        )
+
         removeSignalInteractions = () => {
+          clearSignalInteraction()
+          headingSignalGroup.removeEventListener(
+            'pointerleave',
+            onSignalPointerLeave,
+          )
           signalInteractions.forEach((interaction) => {
             interaction.dot.removeEventListener(
               'pointerenter',
               interaction.onPointerEnter,
-            )
-            interaction.dot.removeEventListener(
-              'pointerleave',
-              interaction.onPointerLeave,
             )
             interaction.dot.removeEventListener('focus', interaction.onFocus)
             interaction.dot.removeEventListener('blur', interaction.onBlur)
@@ -1198,27 +1224,29 @@ export function GalleryScene() {
         </h2>
 
         <nav className="grid-heading__signal" aria-label="Categorías de la galería">
-          <a
-            href="#outdoor-gallery"
-            aria-label="Ir a la categoría Outdoor"
-            onClick={(event) => goToCollection(event, 'outdoor')}
-          >
-            <i className="grid-heading__signal-dot" aria-hidden="true" />
-          </a>
-          <a
-            href="#indoor-gallery"
-            aria-label="Ir a la categoría Indoor"
-            onClick={(event) => goToCollection(event, 'indoor')}
-          >
-            <i className="grid-heading__signal-dot" aria-hidden="true" />
-          </a>
-          <a
-            href="#innovaciones-gallery"
-            aria-label="Ir a la categoría Innovaciones"
-            onClick={(event) => goToCollection(event, 'innovaciones')}
-          >
-            <i className="grid-heading__signal-dot" aria-hidden="true" />
-          </a>
+          <div className="grid-heading__signal-group">
+            <a
+              href="#outdoor-gallery"
+              aria-label="Ir a la categoría Outdoor"
+              onClick={(event) => goToCollection(event, 'outdoor')}
+            >
+              <i className="grid-heading__signal-dot" aria-hidden="true" />
+            </a>
+            <a
+              href="#indoor-gallery"
+              aria-label="Ir a la categoría Indoor"
+              onClick={(event) => goToCollection(event, 'indoor')}
+            >
+              <i className="grid-heading__signal-dot" aria-hidden="true" />
+            </a>
+            <a
+              href="#innovaciones-gallery"
+              aria-label="Ir a la categoría Innovaciones"
+              onClick={(event) => goToCollection(event, 'innovaciones')}
+            >
+              <i className="grid-heading__signal-dot" aria-hidden="true" />
+            </a>
+          </div>
         </nav>
 
         <div className="grid-heading__bottom">
