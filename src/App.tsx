@@ -77,9 +77,30 @@ function HomePage() {
   )
 }
 
+function AvailabilityRoute() {
+  const [contactOpen, setContactOpen] = useState(false)
+
+  return (
+    <>
+      <SiteNavigation
+        revealed
+        onContact={() => setContactOpen(true)}
+        onMedia={() => undefined}
+      />
+
+      <AvailabilityPage onContact={() => setContactOpen(true)} />
+
+      {contactOpen && <ContactCard onClose={() => setContactOpen(false)} />}
+    </>
+  )
+}
+
 function App() {
   const location = useLocation()
-  const backgroundLocation = location.state?.backgroundLocation
+  const backgroundLocation =
+    location.pathname === '/disponibilidad'
+      ? undefined
+      : location.state?.backgroundLocation
 
   return (
     <>
@@ -90,7 +111,7 @@ function App() {
         <Route path="/outdoor" element={<OutdoorPage />} />
         <Route path="/innovaciones" element={<InnovationsPage />} />
         <Route path="/innovations" element={<Navigate to="/innovaciones" replace />} />
-        <Route path="/disponibilidad" element={<AvailabilityPage />} />
+        <Route path="/disponibilidad" element={<AvailabilityRoute />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
@@ -99,7 +120,6 @@ function App() {
           <Route path="/indoor" element={<IndoorPage modal />} />
           <Route path="/outdoor" element={<OutdoorPage modal />} />
           <Route path="/innovaciones" element={<InnovationsPage modal />} />
-          <Route path="/disponibilidad" element={<AvailabilityPage modal />} />
         </Routes>
       )}
     </>

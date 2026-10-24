@@ -1019,34 +1019,6 @@ export function GalleryScene() {
     })
   }
 
-  const openAvailability = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return
-    }
-
-    event.preventDefault()
-    const sourceBounds = event.currentTarget.getBoundingClientRect()
-
-    navigate('/disponibilidad', {
-      state: {
-        backgroundLocation: location,
-        backgroundScrollY: window.scrollY,
-        transitionOrigin: {
-          x: sourceBounds.x,
-          y: sourceBounds.y,
-          width: sourceBounds.width,
-          height: sourceBounds.height,
-        },
-      },
-    })
-  }
-
   const openInnovationShowcase = (
     event: React.MouseEvent<HTMLAnchorElement>,
   ) => {
@@ -1127,7 +1099,6 @@ export function GalleryScene() {
           <Link
             className="collection-heading__availability"
             to="/disponibilidad"
-            onClick={openAvailability}
             onPointerEnter={handleCtaPointerEnter}
             onPointerLeave={handleCtaPointerLeave}
             onFocus={handleCtaFocus}

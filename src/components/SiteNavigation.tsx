@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import butterflyAsset from '../assets/public-butterfly.svg'
 import { gsap, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
@@ -34,7 +34,7 @@ export function SiteNavigation({
   onMedia,
 }: SiteNavigationProps) {
   const location = useLocation()
-  const navigate = useNavigate()
+  const onHomePage = location.pathname === '/'
   const navigation = useRef<HTMLElement>(null)
   const butterflyButton = useRef<HTMLAnchorElement>(null)
   const butterflyImage = useRef<HTMLImageElement>(null)
@@ -281,7 +281,7 @@ export function SiteNavigation({
       <a
         className="site-nav__butterfly"
         ref={butterflyButton}
-        href="#hero"
+        href={onHomePage ? '#hero' : '/'}
         role={compact ? 'button' : undefined}
         aria-label={
           compact
@@ -302,7 +302,9 @@ export function SiteNavigation({
             return
           }
 
-          window.dispatchEvent(new Event('public:navigate-home'))
+          if (onHomePage) {
+            window.dispatchEvent(new Event('public:navigate-home'))
+          }
         }}
       >
         <img ref={butterflyImage} src={butterfly} alt="" />
@@ -312,13 +314,15 @@ export function SiteNavigation({
       <div className="site-nav__menu" id={menuId}>
         <a
           className="site-nav__home"
-          href="#hero"
+          href={onHomePage ? '#hero' : '/'}
           aria-label="Volver al inicio"
           tabIndex={revealed && !temporarilyHidden ? 0 : -1}
           onClick={() => {
             setMenuOpen(false)
             setMediaOpen(false)
-            window.dispatchEvent(new Event('public:navigate-home'))
+            if (onHomePage) {
+              window.dispatchEvent(new Event('public:navigate-home'))
+            }
           }}
         >
           Inicio
@@ -379,7 +383,7 @@ export function SiteNavigation({
           >
             {mediaLinks.map(({ id, label }) => (
               <a
-                href={`#${id}-gallery`}
+                href={`${onHomePage ? '' : '/'}#${id}-gallery`}
                 tabIndex={revealed && !temporarilyHidden && mediaOpen ? 0 : -1}
                 onClick={(event) => {
                   setMenuOpen(false)
@@ -397,35 +401,9 @@ export function SiteNavigation({
         <Link
           to="/disponibilidad"
           tabIndex={revealed && !temporarilyHidden ? 0 : -1}
-          onClick={(event) => {
+          onClick={() => {
             setMenuOpen(false)
             setMediaOpen(false)
-
-            if (
-              event.button !== 0 ||
-              event.metaKey ||
-              event.ctrlKey ||
-              event.shiftKey ||
-              event.altKey
-            ) {
-              return
-            }
-
-            event.preventDefault()
-            const sourceBounds = event.currentTarget.getBoundingClientRect()
-
-            navigate('/disponibilidad', {
-              state: {
-                backgroundLocation: location,
-                backgroundScrollY: window.scrollY,
-                transitionOrigin: {
-                  x: sourceBounds.x,
-                  y: sourceBounds.y,
-                  width: sourceBounds.width,
-                  height: sourceBounds.height,
-                },
-              },
-            })
           }}
         >
           Disponibilidad

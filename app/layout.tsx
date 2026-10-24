@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import 'lenis/dist/lenis.css'
 import '../src/index.css'
 import '../src/App.css'
 

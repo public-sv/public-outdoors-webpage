@@ -28,8 +28,7 @@ export const pages: Record<string, PageMetadata> = {
   },
   '/disponibilidad': {
     title: 'Disponibilidad de espacios publicitarios | PUBLIC',
-    description: 'Próximamente podrás consultar la disponibilidad de espacios publicitarios de PUBLIC en El Salvador.',
-    noindex: true,
+    description: 'Explora la disponibilidad de medios y espacios publicitarios de PUBLIC por ubicación en El Salvador.',
   },
 }
 
