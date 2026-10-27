@@ -2,12 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Lenis from 'lenis'
 import { gsap, ScrollTrigger, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
-import { availableLocations } from '../data/availability'
+import {
+  availableLocations,
+  availableMediaCategories,
+} from '../data/availability'
 import { usePageTone } from '../hooks/usePageTone'
 
 interface AvailabilityPageProps {
   onContact: () => void
 }
+
+type MediaType = 'fijo' | 'digital'
+type ExplorerView = 'locations' | 'categories'
 
 export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
   usePageTone('#07080b', false)
@@ -21,20 +27,85 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
   const scrollTarget = useRef<number | null>(null)
   const lenis = useRef<Lenis | null>(null)
   const inventoryList = useRef<HTMLUListElement>(null)
+  const explorerSwitcher = useRef<HTMLDivElement>(null)
   const locationButtons = useRef<Array<HTMLButtonElement | null>>([])
   const previousButtonTops = useRef<number[]>([])
   const transitioningTitles = useRef<{
     outgoing: HTMLElement | null
     incoming: HTMLElement | null
   } | null>(null)
+  const [mediaType, setMediaType] = useState<MediaType>('fijo')
+  const [explorerView, setExplorerView] = useState<ExplorerView>('locations')
+  const [explorerMenuOpen, setExplorerMenuOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [showInventoryScrollCue, setShowInventoryScrollCue] = useState(false)
-  const activeLocation = availableLocations[activeIndex]
+  const explorerItems =
+    explorerView === 'locations' ? availableLocations : availableMediaCategories
+  const activeLocation = availableLocations[activeIndex] ?? availableLocations[0]
+  const activeCategory =
+    availableMediaCategories[activeIndex] ?? availableMediaCategories[0]
+  const activeImage =
+    explorerView === 'locations' ? activeLocation.image : activeCategory.image
+  const activeImageAlt =
+    explorerView === 'locations'
+      ? activeLocation.imageAlt
+      : activeCategory.imageAlt
+  const activeImageLabel =
+    explorerView === 'locations' ? activeLocation.region : activeCategory.name
+  const inventoryMedia =
+    explorerView === 'locations'
+      ? activeLocation.media.map((medium) => ({
+          ...medium,
+          locationId: activeLocation.id,
+          locationName: activeLocation.name,
+        }))
+      : availableLocations.flatMap((location) =>
+          location.media
+            .filter((medium) => medium.category === activeCategory.id)
+            .map((medium) => ({
+              ...medium,
+              locationId: location.id,
+              locationName: location.name,
+            })),
+        )
 
-  const activateLocation = useCallback((nextIndex: number) => {
+  const selectMediaType = useCallback((nextType: MediaType) => {
+    if (nextType === mediaType) return
+
+    setMediaType(nextType)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        explorerStory.current?.scrollIntoView({
+          behavior: 'auto',
+          block: 'start',
+        })
+      })
+    })
+  }, [mediaType])
+
+  const selectExplorerView = useCallback((nextView: ExplorerView) => {
+    setExplorerMenuOpen(false)
+    if (nextView === explorerView) return
+
+    activeIndexRef.current = 0
+    scrollTarget.current = null
+    setActiveIndex(0)
+    setExplorerView(nextView)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        explorerStory.current?.scrollIntoView({
+          behavior: 'auto',
+          block: 'start',
+        })
+      })
+    })
+  }, [explorerView])
+
+  const activateExplorerItem = useCallback((nextIndex: number) => {
     const boundedIndex = Math.max(
       0,
-      Math.min(availableLocations.length - 1, nextIndex),
+      Math.min(explorerItems.length - 1, nextIndex),
     )
 
     if (boundedIndex === activeIndexRef.current) return
@@ -56,17 +127,17 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
     direction.current = boundedIndex > activeIndexRef.current ? 1 : -1
     activeIndexRef.current = boundedIndex
     setActiveIndex(boundedIndex)
-  }, [])
+  }, [explorerItems.length])
 
-  const goToLocation = useCallback(
+  const goToExplorerItem = useCallback(
     (nextIndex: number) => {
       const boundedIndex = Math.max(
         0,
-        Math.min(availableLocations.length - 1, nextIndex),
+        Math.min(explorerItems.length - 1, nextIndex),
       )
 
       if (!window.matchMedia('(min-width: 1101px)').matches) {
-        activateLocation(boundedIndex)
+        activateExplorerItem(boundedIndex)
         return
       }
       const story = explorerStory.current
@@ -75,7 +146,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
       const stepDistance = (stageHeight || window.innerHeight) * 0.85
 
       scrollTarget.current = boundedIndex
-      activateLocation(boundedIndex)
+      activateExplorerItem(boundedIndex)
       const destination =
         story.getBoundingClientRect().top +
         window.scrollY +
@@ -96,7 +167,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
         })
       }
     },
-    [activateLocation],
+    [activateExplorerItem, explorerItems.length],
   )
 
   useEffect(() => {
@@ -106,32 +177,60 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
       const image = new Image()
       image.src = location.image
     })
+
+    availableMediaCategories.forEach((category) => {
+      const image = new Image()
+      image.src = category.image
+    })
   }, [])
 
   useEffect(() => {
+    if (!explorerMenuOpen) return
+
+    const closeMenu = (event: PointerEvent) => {
+      if (!explorerSwitcher.current?.contains(event.target as Node)) {
+        setExplorerMenuOpen(false)
+      }
+    }
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExplorerMenuOpen(false)
+    }
+
+    window.addEventListener('pointerdown', closeMenu)
+    window.addEventListener('keydown', closeWithEscape)
+    return () => {
+      window.removeEventListener('pointerdown', closeMenu)
+      window.removeEventListener('keydown', closeWithEscape)
+    }
+  }, [explorerMenuOpen])
+
+  useEffect(() => {
     const navigateWithKeyboard = (event: KeyboardEvent) => {
+      if (mediaType !== 'fijo') return
+
       const target = event.target as HTMLElement | null
       if (
         target?.matches('input, textarea, select') ||
-        target?.closest('.site-nav')
+        target?.closest('.site-nav') ||
+        target?.closest('.availability-explorer__switcher')
       ) {
         return
       }
 
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
         event.preventDefault()
-        goToLocation(activeIndexRef.current - 1)
+        goToExplorerItem(activeIndexRef.current - 1)
       }
 
       if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
         event.preventDefault()
-        goToLocation(activeIndexRef.current + 1)
+        goToExplorerItem(activeIndexRef.current + 1)
       }
     }
 
     window.addEventListener('keydown', navigateWithKeyboard)
     return () => window.removeEventListener('keydown', navigateWithKeyboard)
-  }, [goToLocation])
+  }, [goToExplorerItem, mediaType])
 
   useEffect(() => {
     const list = inventoryList.current
@@ -155,13 +254,83 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
       resizeObserver.disconnect()
       list.removeEventListener('scroll', updateScrollCue)
     }
-  }, [activeIndex])
+  }, [activeIndex, explorerView, mediaType])
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion()) return
+
+      const orbs = gsap.utils.toArray<HTMLElement>('.availability-page__orb')
+      const paths = [
+        [
+          { xPercent: 22, yPercent: 18, scaleX: 1.12, scaleY: 0.92, rotation: 10, opacity: 0.2, duration: 15 },
+          { xPercent: 46, yPercent: 4, scaleX: 0.9, scaleY: 1.16, rotation: -12, opacity: 0.14, duration: 17 },
+          { xPercent: 16, yPercent: 38, scaleX: 1.08, scaleY: 0.96, rotation: 17, opacity: 0.19, duration: 16 },
+          { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 15 },
+        ],
+        [
+          { xPercent: -18, yPercent: 32, scaleX: 0.94, scaleY: 1.13, rotation: -14, opacity: 0.2, duration: 18 },
+          { xPercent: -38, yPercent: 8, scaleX: 1.14, scaleY: 0.9, rotation: 12, opacity: 0.13, duration: 16 },
+          { xPercent: -12, yPercent: 48, scaleX: 0.92, scaleY: 1.1, rotation: -8, opacity: 0.18, duration: 19 },
+          { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 17 },
+        ],
+        [
+          { xPercent: 24, yPercent: -28, scaleX: 1.16, scaleY: 0.9, rotation: 13, opacity: 0.19, duration: 17 },
+          { xPercent: -22, yPercent: -44, scaleX: 0.91, scaleY: 1.14, rotation: -16, opacity: 0.13, duration: 19 },
+          { xPercent: 14, yPercent: -14, scaleX: 1.08, scaleY: 0.96, rotation: 9, opacity: 0.17, duration: 16 },
+          { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 18 },
+        ],
+      ]
+
+      const timelines = orbs.map((orb, index) => {
+        const timeline = gsap.timeline({ repeat: -1 })
+
+        gsap.set(orb, {
+          force3D: true,
+          transformOrigin: '50% 50%',
+        })
+
+        paths[index].forEach((point) => {
+          timeline.to(orb, {
+            ...point,
+            ease: 'sine.inOut',
+            force3D: true,
+          })
+        })
+
+        return timeline
+      })
+
+      const syncWithPageVisibility = () => {
+        timelines.forEach((timeline) => {
+          if (document.hidden) {
+            timeline.pause()
+          } else {
+            timeline.resume()
+          }
+        })
+      }
+
+      document.addEventListener('visibilitychange', syncWithPageVisibility)
+
+      return () => {
+        document.removeEventListener('visibilitychange', syncWithPageVisibility)
+        timelines.forEach((timeline) => timeline.kill())
+      }
+    },
+    { scope: page },
+  )
 
   useGSAP(
     () => {
       const media = gsap.matchMedia()
 
       media.add('(min-width: 1101px)', () => {
+        if (mediaType !== 'fijo') {
+          requestAnimationFrame(() => ScrollTrigger.refresh())
+          return
+        }
+
         const smoothScroll = new Lenis({
           autoRaf: false,
           autoToggle: true,
@@ -195,7 +364,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
           start: 'top top',
           end: () => {
             const stageHeight = explorerStage.current?.getBoundingClientRect().height
-            return `+=${availableLocations.length * (stageHeight || window.innerHeight) * 0.85}`
+            return `+=${explorerItems.length * (stageHeight || window.innerHeight) * 0.85}`
           },
           onUpdate: (self) => {
             if (scrollTarget.current !== null) return
@@ -203,10 +372,10 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
             const stageHeight = explorerStage.current?.getBoundingClientRect().height
             const stepDistance = (stageHeight || window.innerHeight) * 0.85
             const nextIndex = Math.min(
-              availableLocations.length - 1,
+              explorerItems.length - 1,
               Math.max(0, Math.round((self.scroll() - self.start) / stepDistance)),
             )
-            activateLocation(nextIndex)
+            activateExplorerItem(nextIndex)
           },
         })
 
@@ -223,7 +392,16 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
 
       return () => media.revert()
     },
-    { dependencies: [goToLocation], scope: page, revertOnUpdate: true },
+    {
+      dependencies: [
+        goToExplorerItem,
+        mediaType,
+        explorerView,
+        explorerItems.length,
+      ],
+      scope: page,
+      revertOnUpdate: true,
+    },
   )
 
   useGSAP(
@@ -235,7 +413,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
         .from(
           '.availability-page__title-line > span',
           {
-            yPercent: 112,
+            yPercent: 140,
             duration: 1,
             stagger: 0.1,
             ease: 'power4.out',
@@ -360,7 +538,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
       }
     },
     {
-      dependencies: [activeIndex],
+      dependencies: [activeIndex, explorerView],
       scope: page,
       revertOnUpdate: true,
     },
@@ -388,23 +566,100 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
               <span>Posibilidades extraordinarias.</span>
             </p>
             <a className="availability-page__explore" href="#explorar">
-              <span>Explorar ubicaciones</span>
+              <span>Explorar medios</span>
               <span aria-hidden="true">↓</span>
             </a>
           </div>
         </header>
 
-        <div className="availability-explorer__story" ref={explorerStory}>
+        <div
+          className={`availability-explorer__story availability-explorer__story--${mediaType}`}
+          ref={explorerStory}
+        >
           <section
             id="explorar"
-            className="availability-explorer"
-            aria-label="Explorador de ubicaciones disponibles"
+            className={`availability-explorer availability-explorer--${mediaType}`}
+            aria-label="Disponibilidad por tipo de medio"
             ref={explorerStage}
           >
+          <div className="availability-explorer__tabs" role="tablist" aria-label="Tipo de medio">
+            <button
+              id="availability-tab-fijo"
+              className={mediaType === 'fijo' ? 'is-active' : undefined}
+              type="button"
+              role="tab"
+              aria-selected={mediaType === 'fijo'}
+              aria-controls="availability-panel-fijo"
+              onClick={() => selectMediaType('fijo')}
+            >
+              Fijo
+            </button>
+            <button
+              id="availability-tab-digital"
+              className={mediaType === 'digital' ? 'is-active' : undefined}
+              type="button"
+              role="tab"
+              aria-selected={mediaType === 'digital'}
+              aria-controls="availability-panel-digital"
+              onClick={() => selectMediaType('digital')}
+            >
+              Digital
+            </button>
+          </div>
+
+          {mediaType === 'fijo' ? (
+          <div
+            id="availability-panel-fijo"
+            className="availability-explorer__fixed-panel"
+            role="tabpanel"
+            aria-labelledby="availability-tab-fijo"
+          >
           <aside className="availability-explorer__locations">
-            <p className="availability-explorer__label">Elige un lugar</p>
+            <div
+              className={`availability-explorer__switcher${explorerMenuOpen ? ' is-open' : ''}`}
+              ref={explorerSwitcher}
+            >
+              <button
+                className="availability-explorer__switcher-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={explorerMenuOpen}
+                aria-controls="availability-explorer-menu"
+                onClick={() => setExplorerMenuOpen((open) => !open)}
+              >
+                <span>Explora</span>
+                <span className="availability-explorer__switcher-chevron" aria-hidden="true" />
+              </button>
+
+              <div
+                id="availability-explorer-menu"
+                className="availability-explorer__switcher-menu"
+                role="menu"
+                aria-hidden={!explorerMenuOpen}
+              >
+                <button
+                  className={explorerView === 'locations' ? 'is-active' : undefined}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={explorerView === 'locations'}
+                  onClick={() => selectExplorerView('locations')}
+                >
+                  <span>Por ubicación</span>
+                </button>
+                <button
+                  className={explorerView === 'categories' ? 'is-active' : undefined}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={explorerView === 'categories'}
+                  onClick={() => selectExplorerView('categories')}
+                >
+                  <span>Por tipo de medio</span>
+                </button>
+              </div>
+            </div>
+
             <div className="availability-explorer__location-list">
-              {availableLocations.map((location, index) => (
+              {explorerItems.map((item, index) => (
                 <button
                   className={`availability-explorer__location${
                     index === activeIndex ? ' is-active' : ''
@@ -414,15 +669,17 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
                   ref={(button) => {
                     locationButtons.current[index] = button
                   }}
-                  onClick={() => goToLocation(index)}
-                  key={location.id}
+                  onClick={() => goToExplorerItem(index)}
+                  key={item.id}
                 >
-                  <strong>{location.name}</strong>
+                  <strong>{item.name}</strong>
                 </button>
               ))}
             </div>
             <p className="availability-explorer__hint">
-              Usa las flechas o elige una ubicación.
+              {explorerView === 'locations'
+                ? 'Usa las flechas o elige una ubicación.'
+                : 'Explora los medios por categoría.'}
             </p>
           </aside>
 
@@ -437,20 +694,20 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
                 const distance = event.clientX - swipeStart.current
                 swipeStart.current = null
                 if (Math.abs(distance) < 48) return
-                goToLocation(activeIndexRef.current + (distance < 0 ? 1 : -1))
+                goToExplorerItem(activeIndexRef.current + (distance < 0 ? 1 : -1))
               }}
             >
               <img
                 className="availability-explorer__image"
-                src={activeLocation.image}
-                alt={activeLocation.imageAlt}
+                src={activeImage}
+                alt={activeImageAlt}
               />
               <div className="availability-explorer__image-shade" aria-hidden="true" />
               <p className="availability-explorer__photo-label">
                 Fotografía / PUBLIC
               </p>
               <p className="availability-explorer__image-index">
-                {String(activeIndex + 1).padStart(2, '0')} — {activeLocation.region}
+                {String(activeIndex + 1).padStart(2, '0')} — {activeImageLabel}
               </p>
             </div>
 
@@ -467,17 +724,25 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
               <div className="availability-explorer__controls">
                 <button
                   type="button"
-                  aria-label="Ubicación anterior"
+                  aria-label={
+                    explorerView === 'locations'
+                      ? 'Ubicación anterior'
+                      : 'Categoría anterior'
+                  }
                   disabled={activeIndex === 0}
-                  onClick={() => goToLocation(activeIndex - 1)}
+                  onClick={() => goToExplorerItem(activeIndex - 1)}
                 >
                   ←
                 </button>
                 <button
                   type="button"
-                  aria-label="Ubicación siguiente"
-                  disabled={activeIndex === availableLocations.length - 1}
-                  onClick={() => goToLocation(activeIndex + 1)}
+                  aria-label={
+                    explorerView === 'locations'
+                      ? 'Ubicación siguiente'
+                      : 'Categoría siguiente'
+                  }
+                  disabled={activeIndex === explorerItems.length - 1}
+                  onClick={() => goToExplorerItem(activeIndex + 1)}
                 >
                   →
                 </button>
@@ -487,14 +752,26 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
 
           <aside className="availability-explorer__inventory">
             <div className="availability-explorer__inventory-heading">
-              <p className="availability-explorer__label">Medios disponibles</p>
+              <p className="availability-explorer__label">
+                {explorerView === 'locations'
+                  ? 'Medios disponibles'
+                  : `Medios ${activeCategory.name}`}
+              </p>
             </div>
 
             <ul className="availability-explorer__media-list" ref={inventoryList}>
-              {activeLocation.media.map((medium) => (
-                <li className="availability-explorer__medium" key={medium.name}>
+              {inventoryMedia.map((medium) => (
+                <li
+                  className="availability-explorer__medium"
+                  key={`${medium.locationId}-${medium.name}`}
+                >
                   <span className="availability-explorer__status" aria-hidden="true" />
-                  <p>{medium.name}</p>
+                  <div className="availability-explorer__medium-copy">
+                    <p>{medium.name}</p>
+                    {explorerView === 'categories' && (
+                      <span>{medium.locationName}</span>
+                    )}
+                  </div>
                   <strong aria-label={`${medium.available} disponibles`}>
                     {medium.available}
                   </strong>
@@ -521,6 +798,29 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
             )}
 
           </aside>
+          </div>
+          ) : (
+          <div
+            id="availability-panel-digital"
+            className="availability-explorer__digital"
+            role="tabpanel"
+            aria-labelledby="availability-tab-digital"
+          >
+            <h2>Tu marca, donde está tu audiencia.</h2>
+            <p className="availability-explorer__digital-copy">
+              Conecta con nuestro equipo de ventas para conocer formatos,
+              audiencias y los reportes que harán crecer tu campaña.
+            </p>
+            <button
+              className="availability-explorer__digital-contact"
+              type="button"
+              onClick={onContact}
+            >
+              Contactar a ventas
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          )}
           </section>
 
         </div>

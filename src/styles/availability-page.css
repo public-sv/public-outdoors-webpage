@@ -31,6 +31,7 @@
   opacity: .18;
   filter: blur(clamp(75px, 10vw, 145px));
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .availability-page__orb--red {
@@ -100,17 +101,17 @@
   width: 100%;
   max-width: none;
   margin: clamp(1.5rem, 4vw, 4rem) 0;
-  font-size: clamp(5rem, 9.15vw, 11rem);
-  font-weight: 480;
-  line-height: .87;
-  letter-spacing: -.075em;
-  text-transform: uppercase;
+  font-size: clamp(5.6rem, 12.6vw, 13.4rem);
+  font-weight: 500;
+  line-height: .72;
+  letter-spacing: -.09em;
 }
 
 .availability-page__title-line {
   display: block;
   overflow: hidden;
-  padding: .03em .06em .07em 0;
+  margin-bottom: -.12em;
+  padding: .04em .08em .2em 0;
 }
 
 .availability-page__title-line > span {
@@ -195,10 +196,133 @@
   scroll-margin-top: 0;
 }
 
+.availability-explorer__tabs {
+  position: absolute;
+  z-index: 4;
+  top: clamp(5rem, 6.4vw, 6.6rem);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: clamp(1.7rem, 3vw, 3rem);
+  transform: translateX(-50%);
+}
+
+.availability-explorer__tabs button {
+  position: relative;
+  min-width: 4.5rem;
+  padding: .5rem .15rem .7rem;
+  border: 0;
+  background: transparent;
+  color: rgb(247 245 239 / 42%);
+  font: inherit;
+  font-size: clamp(.713rem, .78vw, .828rem);
+  font-weight: 750;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .3s ease;
+}
+
+.availability-explorer__tabs button::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: #f7f5ef;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+}
+
+.availability-explorer__tabs button.is-active {
+  color: #f7f5ef;
+}
+
+.availability-explorer__tabs button.is-active::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+.availability-explorer__tabs button:focus-visible {
+  border-radius: .2rem;
+  outline: 1px solid rgb(247 245 239 / 68%);
+  outline-offset: 4px;
+}
+
+.availability-explorer__fixed-panel {
+  display: contents;
+}
+
+.availability-explorer--digital {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.availability-explorer__digital {
+  width: min(52rem, 86vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: clamp(1rem, 3vw, 3rem);
+  text-align: center;
+}
+
+.availability-explorer__digital h2 {
+  max-width: 14ch;
+  margin: 0;
+  font-size: clamp(2.9rem, 4.75vw, 5.5rem);
+  font-weight: 480;
+  line-height: .94;
+  letter-spacing: -.06em;
+  text-wrap: balance;
+}
+
+.availability-explorer__digital-copy {
+  max-width: 34rem;
+  margin: clamp(1.4rem, 2.3vw, 2.1rem) 0 0;
+  color: rgb(247 245 239 / 60%);
+  font-size: clamp(.828rem, 1vw, 1.012rem);
+  line-height: 1.55;
+  text-wrap: balance;
+}
+
+.availability-explorer__digital-contact {
+  min-height: 3.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .9rem;
+  margin-top: clamp(1.6rem, 2.7vw, 2.5rem);
+  padding: .5rem 1.2rem;
+  border: 1px solid rgb(247 245 239 / 20%);
+  border-radius: 999px;
+  background: rgb(247 245 239 / 5%);
+  color: #f7f5ef;
+  font: inherit;
+  font-size: .713rem;
+  font-weight: 750;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color .3s ease, color .3s ease, transform .3s ease;
+}
+
+.availability-explorer__digital-contact > span {
+  font-size: 1rem;
+  transition: transform .3s ease;
+}
+
 @media (min-width: 1101px) {
   .availability-explorer {
     align-items: center;
-    padding-block: clamp(4rem, 6vw, 5.75rem);
+    padding-top: clamp(6.5rem, 8vw, 7.75rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .availability-explorer__tabs {
+    top: clamp(6.5rem, 8vw, 7.5rem);
   }
 
   .availability-explorer__locations {
@@ -212,6 +336,109 @@
   flex-direction: column;
   padding-block: .65rem;
   text-align: right;
+}
+
+.availability-explorer__switcher {
+  position: relative;
+  z-index: 6;
+  align-self: flex-end;
+}
+
+.availability-explorer__switcher-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .35rem 0;
+  border: 0;
+  background: transparent;
+  color: rgb(247 245 239 / 48%);
+  font: inherit;
+  font-size: .69rem;
+  font-weight: 750;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .3s ease;
+}
+
+.availability-explorer__switcher-chevron {
+  width: .36rem;
+  height: .36rem;
+  margin-top: -.2rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+}
+
+.availability-explorer__switcher.is-open .availability-explorer__switcher-trigger {
+  color: #f7f5ef;
+}
+
+.availability-explorer__switcher.is-open .availability-explorer__switcher-chevron {
+  transform: translateY(.12rem) rotate(225deg);
+}
+
+.availability-explorer__switcher-menu {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + .65rem);
+  right: 0;
+  width: min(16.5rem, calc(100vw - 2rem));
+  display: grid;
+  padding: .42rem;
+  border: 1px solid rgb(247 245 239 / 14%);
+  border-radius: 1rem;
+  opacity: 0;
+  visibility: hidden;
+  background: #0a0c0f;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset,
+    0 1.2rem 3rem rgb(0 0 0 / 42%);
+  text-align: left;
+  transform: translateY(-.4rem) scale(.98);
+  transform-origin: top right;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  pointer-events: none;
+  transition:
+    opacity .25s ease,
+    visibility .25s ease,
+    transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+
+.availability-explorer__switcher.is-open .availability-explorer__switcher-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.availability-explorer__switcher-menu button {
+  display: block;
+  padding: .85rem .9rem;
+  border: 0;
+  border-radius: .7rem;
+  background: transparent;
+  color: rgb(247 245 239 / 52%);
+  font: inherit;
+  font-size: .713rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition: color .25s ease, background-color .25s ease;
+}
+
+.availability-explorer__switcher-menu button.is-active {
+  background: rgb(247 245 239 / 7%);
+  color: #f7f5ef;
+}
+
+.availability-explorer__switcher-trigger:focus-visible,
+.availability-explorer__switcher-menu button:focus-visible {
+  outline: 1px solid rgb(247 245 239 / 62%);
+  outline-offset: 2px;
 }
 
 .availability-explorer__label {
@@ -468,6 +695,21 @@
   line-height: 1.25;
 }
 
+.availability-explorer__medium-copy {
+  min-width: 0;
+}
+
+.availability-explorer__medium-copy > span {
+  display: block;
+  margin-top: .28rem;
+  color: rgb(247 245 239 / 35%);
+  font-size: .598rem;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 .availability-explorer__medium strong {
   color: #f7f5ef;
   font-size: clamp(.805rem, .92vw, .943rem);
@@ -494,6 +736,30 @@
 
   .availability-explorer__location:hover {
     color: rgb(247 245 239 / 72%);
+  }
+
+  .availability-explorer__switcher-trigger:hover {
+    color: #f7f5ef;
+  }
+
+  .availability-explorer__switcher-menu button:hover {
+    background: rgb(247 245 239 / 7%);
+    color: #f7f5ef;
+  }
+
+  .availability-explorer__tabs button:hover {
+    color: rgb(247 245 239 / 76%);
+  }
+
+  .availability-explorer__digital-contact:hover {
+    border-color: #f7f5ef;
+    background: #f7f5ef;
+    color: #07080b;
+    transform: translateY(-2px);
+  }
+
+  .availability-explorer__digital-contact:hover > span {
+    transform: translate(.15rem, -.15rem);
   }
 
   .availability-explorer__contact:hover {
@@ -528,6 +794,19 @@
     width: 100%;
     box-sizing: border-box;
   }
+
+  .availability-explorer__tabs {
+    top: 6.35rem;
+  }
+
+  .availability-explorer--fijo {
+    padding-top: 10rem;
+  }
+
+  .availability-explorer--digital {
+    min-height: 100svh;
+    min-height: 100dvh;
+  }
 }
 
 @media (max-width: 900px) {
@@ -538,6 +817,7 @@
 
   .availability-page__intro h1 {
     font-size: clamp(4rem, 15.5vw, 7.5rem);
+    line-height: .78;
   }
 
   .availability-page__intro-footer {
@@ -548,6 +828,10 @@
     --availability-image-height: clamp(21rem, 72vw, 34rem);
 
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .availability-explorer__tabs {
+    top: 6.1rem;
   }
 
   .availability-explorer__locations,
@@ -637,6 +921,34 @@
     justify-content: center;
   }
 
+  .availability-explorer--fijo {
+    padding-top: 9.5rem;
+  }
+
+  .availability-explorer__tabs {
+    top: 5.8rem;
+    gap: 1.25rem;
+  }
+
+  .availability-explorer__tabs button {
+    min-width: 4rem;
+  }
+
+  .availability-explorer__digital {
+    width: 100%;
+    margin-top: 2rem;
+  }
+
+  .availability-explorer__digital h2 {
+    max-width: 12ch;
+    font-size: clamp(2.75rem, 11.5vw, 4.25rem);
+  }
+
+  .availability-explorer__digital-copy {
+    max-width: 29rem;
+    font-size: .897rem;
+  }
+
   .availability-explorer__photo-label,
   .availability-explorer__image-index {
     bottom: 1rem;
@@ -648,6 +960,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .availability-page__orb {
+    will-change: auto;
+  }
+
   .availability-explorer__image,
   .availability-page__title-line > span {
     will-change: auto;
@@ -655,5 +971,10 @@
 
   .availability-explorer__scroll-cue {
     animation: none;
+  }
+
+  .availability-explorer__switcher-chevron,
+  .availability-explorer__switcher-menu {
+    transition: none;
   }
 }
