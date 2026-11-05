@@ -429,10 +429,6 @@ body:has(.site-nav--light-surface) .site-selection-access {
     --site-nav-pill-height: 2.875rem;
   }
 
-  .site-nav--without-butterfly.site-nav--has-selection .site-nav__availability-link {
-    display: none;
-  }
-
   .site-nav--without-butterfly.site-nav--has-selection .site-nav__menu {
     right: 4.95rem;
   }
@@ -446,5 +442,19 @@ body:has(.site-nav--light-surface) .site-selection-access {
   .site-nav__selection-island .availability-selection-icon {
     width: 1.7rem;
     height: 1.7rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-selection-access:not(.has-items) {
+    display: none;
+  }
+
+  .site-nav--without-butterfly.site-nav--has-selection .site-nav__menu {
+    right: 1rem;
+  }
+
+  .site-nav__selection-island {
+    top: calc(.85rem + var(--site-nav-pill-height) + .65rem);
   }
 }
