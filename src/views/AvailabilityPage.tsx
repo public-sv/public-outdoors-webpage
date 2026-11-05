@@ -243,7 +243,10 @@ export function AvailabilityPage({
 
     if (boundedIndex === activeIndexRef.current) return
 
-    if (!prefersReducedMotion()) {
+    if (
+      !prefersReducedMotion() &&
+      !window.matchMedia('(max-width: 620px)').matches
+    ) {
       previousButtonTops.current = locationButtons.current.map(
         (button) => button?.getBoundingClientRect().top ?? 0,
       )
@@ -347,6 +350,8 @@ export function AvailabilityPage({
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
 
+    if (window.matchMedia('(max-width: 900px)').matches) return
+
     availableLocations.forEach((location) => {
       const image = new Image()
       image.src = location.image
@@ -412,65 +417,72 @@ export function AvailabilityPage({
 
   useGSAP(
     () => {
-      if (prefersReducedMotion()) return
+      const media = gsap.matchMedia()
 
-      const orbs = gsap.utils.toArray<HTMLElement>('.availability-page__orb')
-      const paths = [
-        [
-          { xPercent: 22, yPercent: 18, scaleX: 1.12, scaleY: 0.92, rotation: 10, opacity: 0.2, duration: 15 },
-          { xPercent: 46, yPercent: 4, scaleX: 0.9, scaleY: 1.16, rotation: -12, opacity: 0.14, duration: 17 },
-          { xPercent: 16, yPercent: 38, scaleX: 1.08, scaleY: 0.96, rotation: 17, opacity: 0.19, duration: 16 },
-          { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 15 },
-        ],
-        [
-          { xPercent: -18, yPercent: 32, scaleX: 0.94, scaleY: 1.13, rotation: -14, opacity: 0.2, duration: 18 },
-          { xPercent: -38, yPercent: 8, scaleX: 1.14, scaleY: 0.9, rotation: 12, opacity: 0.13, duration: 16 },
-          { xPercent: -12, yPercent: 48, scaleX: 0.92, scaleY: 1.1, rotation: -8, opacity: 0.18, duration: 19 },
-          { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 17 },
-        ],
-        [
-          { xPercent: 24, yPercent: -28, scaleX: 1.16, scaleY: 0.9, rotation: 13, opacity: 0.19, duration: 17 },
-          { xPercent: -22, yPercent: -44, scaleX: 0.91, scaleY: 1.14, rotation: -16, opacity: 0.13, duration: 19 },
-          { xPercent: 14, yPercent: -14, scaleX: 1.08, scaleY: 0.96, rotation: 9, opacity: 0.17, duration: 16 },
-          { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 18 },
-        ],
-      ]
+      media.add(
+        '(min-width: 621px) and (prefers-reduced-motion: no-preference)',
+        () => {
+          const orbs = gsap.utils.toArray<HTMLElement>('.availability-page__orb')
+          const paths = [
+            [
+              { xPercent: 22, yPercent: 18, scaleX: 1.12, scaleY: 0.92, rotation: 10, opacity: 0.2, duration: 15 },
+              { xPercent: 46, yPercent: 4, scaleX: 0.9, scaleY: 1.16, rotation: -12, opacity: 0.14, duration: 17 },
+              { xPercent: 16, yPercent: 38, scaleX: 1.08, scaleY: 0.96, rotation: 17, opacity: 0.19, duration: 16 },
+              { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 15 },
+            ],
+            [
+              { xPercent: -18, yPercent: 32, scaleX: 0.94, scaleY: 1.13, rotation: -14, opacity: 0.2, duration: 18 },
+              { xPercent: -38, yPercent: 8, scaleX: 1.14, scaleY: 0.9, rotation: 12, opacity: 0.13, duration: 16 },
+              { xPercent: -12, yPercent: 48, scaleX: 0.92, scaleY: 1.1, rotation: -8, opacity: 0.18, duration: 19 },
+              { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 17 },
+            ],
+            [
+              { xPercent: 24, yPercent: -28, scaleX: 1.16, scaleY: 0.9, rotation: 13, opacity: 0.19, duration: 17 },
+              { xPercent: -22, yPercent: -44, scaleX: 0.91, scaleY: 1.14, rotation: -16, opacity: 0.13, duration: 19 },
+              { xPercent: 14, yPercent: -14, scaleX: 1.08, scaleY: 0.96, rotation: 9, opacity: 0.17, duration: 16 },
+              { xPercent: 0, yPercent: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: 0.18, duration: 18 },
+            ],
+          ]
 
-      const timelines = orbs.map((orb, index) => {
-        const timeline = gsap.timeline({ repeat: -1 })
+          const timelines = orbs.map((orb, index) => {
+            const timeline = gsap.timeline({ repeat: -1 })
 
-        gsap.set(orb, {
-          force3D: true,
-          transformOrigin: '50% 50%',
-        })
+            gsap.set(orb, {
+              force3D: true,
+              transformOrigin: '50% 50%',
+            })
 
-        paths[index].forEach((point) => {
-          timeline.to(orb, {
-            ...point,
-            ease: 'sine.inOut',
-            force3D: true,
+            paths[index].forEach((point) => {
+              timeline.to(orb, {
+                ...point,
+                ease: 'sine.inOut',
+                force3D: true,
+              })
+            })
+
+            return timeline
           })
-        })
 
-        return timeline
-      })
-
-      const syncWithPageVisibility = () => {
-        timelines.forEach((timeline) => {
-          if (document.hidden) {
-            timeline.pause()
-          } else {
-            timeline.resume()
+          const syncWithPageVisibility = () => {
+            timelines.forEach((timeline) => {
+              if (document.hidden) {
+                timeline.pause()
+              } else {
+                timeline.resume()
+              }
+            })
           }
-        })
-      }
 
-      document.addEventListener('visibilitychange', syncWithPageVisibility)
+          document.addEventListener('visibilitychange', syncWithPageVisibility)
 
-      return () => {
-        document.removeEventListener('visibilitychange', syncWithPageVisibility)
-        timelines.forEach((timeline) => timeline.kill())
-      }
+          return () => {
+            document.removeEventListener('visibilitychange', syncWithPageVisibility)
+            timelines.forEach((timeline) => timeline.kill())
+          }
+        },
+      )
+
+      return () => media.revert()
     },
     { scope: page },
   )
@@ -565,7 +577,10 @@ export function AvailabilityPage({
 
   useGSAP(
     () => {
-      if (prefersReducedMotion()) return
+      if (
+        prefersReducedMotion() ||
+        window.matchMedia('(max-width: 620px)').matches
+      ) return
 
       const timeline = gsap
         .timeline()
@@ -611,7 +626,10 @@ export function AvailabilityPage({
       previousButtonTops.current = []
       transitioningTitles.current = null
 
-      if (prefersReducedMotion()) return
+      if (
+        prefersReducedMotion() ||
+        window.matchMedia('(max-width: 620px)').matches
+      ) return
 
       const travel = direction.current
       const buttonTweens = buttons.flatMap((button, index) => {
@@ -897,6 +915,8 @@ export function AvailabilityPage({
                     src={item.image}
                     alt={item.imageAlt}
                     draggable={false}
+                    loading={index < 2 ? 'eager' : 'lazy'}
+                    decoding="async"
                   />
                   <div className="availability-explorer__image-shade" aria-hidden="true" />
                   <p className="availability-explorer__photo-label">

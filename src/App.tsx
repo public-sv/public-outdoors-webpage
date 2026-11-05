@@ -145,6 +145,7 @@ function App() {
       <AvailabilitySelectionAccess
         selectionCount={selectedKeys.size}
         onOpen={openSelection}
+        availabilityPage={location.pathname === '/disponibilidad'}
       />
       <Routes location={backgroundLocation ?? location}>
         <Route path="/" element={<HomePage />} />

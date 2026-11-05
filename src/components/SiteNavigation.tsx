@@ -277,6 +277,8 @@ export function SiteNavigation({
         mediaOpen ? ' is-media-open' : ''
       }${
         reserveSelectionSpace ? ' site-nav--has-selection' : ''
+      }${
+        location.pathname === '/disponibilidad' ? ' site-nav--availability' : ''
       }`}
       aria-label="Navegación principal"
       aria-hidden={!revealed || temporarilyHidden}

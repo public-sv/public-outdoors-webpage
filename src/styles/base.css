@@ -445,6 +445,18 @@ body:has(.site-nav--light-surface) .site-selection-access {
   }
 }
 
+@media (max-width: 620px) {
+  .site-nav--availability .site-nav__menu,
+  .site-selection-access--availability {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .site-nav--availability .site-nav__menu {
+    background: rgb(7 8 11 / 94%);
+  }
+}
+
 @media (max-width: 600px) {
   .site-nav__menu {
     right: 1rem;
