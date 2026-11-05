@@ -69,7 +69,8 @@ Copy `.env.example` to `.env.local` for local overrides.
 | `NEXT_PUBLIC_SITE_URL` | Public | Canonical production origin. |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | Public | Set to `true` only in production. |
 | `CATALOG_API_URL` | Server only | HTTPS endpoint used by `/api/catalog`. |
-| `CATALOG_API_TOKEN` | Server only | Optional bearer token for the catalog API. |
+| `CATALOG_API_KEY` | Server only | Required private key sent only by the server. |
+| `CATALOG_API_KEY_HEADER` | Server only | Header used for the key; defaults to `X-API-Key`. |
 
 Never prefix API secrets with `NEXT_PUBLIC_`. Netlify Deploy Previews and branch
 deploys explicitly disable indexing in `netlify.toml`.
@@ -83,9 +84,10 @@ deploys explicitly disable indexing in `netlify.toml`.
   upstream failures return `502`.
 
 The gateway applies a 10-second timeout, requires JSON responses, disables
-caching for now, and keeps `CATALOG_API_TOKEN` off the client. Authentication,
-response validation, caching, and catalog-specific query rules can be tightened
-once the final API contract is available.
+caching for now, and keeps `CATALOG_API_KEY` off the client. The browser only
+calls the same-origin `/api/catalog` gateway; if the upstream service is not
+configured, fails, or returns an invalid catalog, the availability interface
+continues using the local TypeScript catalog.
 
 ## Netlify
 
@@ -99,8 +101,9 @@ Configure production values in Netlify under environment variables:
 ```dotenv
 NEXT_PUBLIC_SITE_URL=https://publicoutdoors.com
 NEXT_PUBLIC_ALLOW_INDEXING=true
-CATALOG_API_URL=https://api.example.com/catalog
-CATALOG_API_TOKEN=<secret>
+CATALOG_API_URL=https://aowlcmxyfvvqbxgykvaj.supabase.co/functions/v1/public-catalog
+CATALOG_API_KEY=<secret>
+CATALOG_API_KEY_HEADER=X-API-Key
 ```
 
 After changing an environment variable, trigger a new deploy. Keep preview

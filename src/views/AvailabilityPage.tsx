@@ -1,21 +1,34 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Lenis from 'lenis'
+import { useSearchParams } from 'react-router-dom'
 import { gsap, ScrollTrigger, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
+import { AvailabilityCatalogModal, type AvailabilityCatalogModalContext } from '../components/AvailabilityCatalogModal'
+import { SiteFooter } from '../components/SiteFooter'
 import {
-  availableLocations,
   availableMediaCategories,
+  type AvailabilityCatalog,
 } from '../data/availability'
 import { usePageTone } from '../hooks/usePageTone'
 
 interface AvailabilityPageProps {
+  catalog: AvailabilityCatalog
   onContact: () => void
+  onOpenSelection: () => void
+  selectedSpaceKeys: Set<string>
+  onSelectedSpaceKeysChange: (next: Set<string>) => void
 }
 
 type MediaType = 'fijo' | 'digital'
 type ExplorerView = 'locations' | 'categories'
 
-export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
+export function AvailabilityPage({
+  catalog,
+  onContact,
+  onOpenSelection,
+  selectedSpaceKeys,
+  onSelectedSpaceKeysChange,
+}: AvailabilityPageProps) {
   usePageTone('#07080b', false)
   const page = useRef<HTMLElement>(null)
   const explorerStory = useRef<HTMLDivElement>(null)
@@ -27,7 +40,6 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
   const scrollTarget = useRef<number | null>(null)
   const lenis = useRef<Lenis | null>(null)
   const inventoryList = useRef<HTMLUListElement>(null)
-  const explorerSwitcher = useRef<HTMLDivElement>(null)
   const locationButtons = useRef<Array<HTMLButtonElement | null>>([])
   const previousButtonTops = useRef<number[]>([])
   const transitioningTitles = useRef<{
@@ -36,9 +48,27 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
   } | null>(null)
   const [mediaType, setMediaType] = useState<MediaType>('fijo')
   const [explorerView, setExplorerView] = useState<ExplorerView>('locations')
-  const [explorerMenuOpen, setExplorerMenuOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [showInventoryScrollCue, setShowInventoryScrollCue] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [catalogOrigin, setCatalogOrigin] = useState<{
+    key: string
+    origin: NonNullable<AvailabilityCatalogModalContext['origin']>
+  } | null>(null)
+  const availableLocations = useMemo(() => catalog.locations.map((location) => ({
+    id: location.id,
+    name: location.name,
+    shortName: location.city,
+    region: location.city,
+    image: location.cover_image.url,
+    imageAlt: location.cover_image.alt,
+    media: location.spaces.map((space) => ({
+      id: space.id,
+      name: space.name,
+      available: space.available,
+      category: space.category,
+    })),
+  })), [catalog.locations])
   const explorerItems =
     explorerView === 'locations' ? availableLocations : availableMediaCategories
   const activeLocation = availableLocations[activeIndex] ?? availableLocations[0]
@@ -69,6 +99,107 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
             })),
         )
 
+  const catalogMode = searchParams.get('catalog')
+  const catalogLocationId = searchParams.get('location')
+  const catalogTypeId = searchParams.get('type')
+  const catalogSpaceId = searchParams.get('space')
+  const catalogModal = useMemo<AvailabilityCatalogModalContext | null>(() => {
+    if (
+      catalogMode === 'location' &&
+      catalogLocationId &&
+      catalog.locations.some((location) => location.id === catalogLocationId)
+    ) {
+      const key = `locations:${catalogLocationId}`
+      return {
+        view: 'locations',
+        itemId: catalogLocationId,
+        origin: catalogOrigin?.key === key ? catalogOrigin.origin : undefined,
+      } satisfies AvailabilityCatalogModalContext
+    }
+
+    if (
+      catalogMode === 'media-type' &&
+      catalogTypeId &&
+      availableMediaCategories.some((category) => category.id === catalogTypeId)
+    ) {
+      const key = `categories:${catalogTypeId}`
+      return {
+        view: 'categories',
+        itemId: catalogTypeId,
+        origin: catalogOrigin?.key === key ? catalogOrigin.origin : undefined,
+      } satisfies AvailabilityCatalogModalContext
+    }
+
+    return null
+  }, [
+    catalog.locations,
+    catalogLocationId,
+    catalogMode,
+    catalogOrigin,
+    catalogTypeId,
+  ])
+  const detailKey = catalogModal && catalogSpaceId && catalogLocationId
+    ? `${catalogLocationId}:${catalogSpaceId}`
+    : null
+
+  const openCatalogModal = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const itemId = explorerView === 'locations' ? activeLocation.id : activeCategory.id
+    const key = `${explorerView}:${itemId}`
+    const next = new URLSearchParams(searchParams)
+
+    next.set('catalog', explorerView === 'locations' ? 'location' : 'media-type')
+    next.delete('location')
+    next.delete('type')
+    next.delete('space')
+    next.set(explorerView === 'locations' ? 'location' : 'type', itemId)
+    setCatalogOrigin({
+      key,
+      origin: {
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+      },
+    })
+    setSearchParams(next)
+  }
+
+  const closeCatalogModal = useCallback(() => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('catalog')
+    next.delete('location')
+    next.delete('type')
+    next.delete('space')
+    setCatalogOrigin(null)
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  const setCatalogDetail = useCallback((nextKey: string | null) => {
+    const next = new URLSearchParams(searchParams)
+
+    if (!nextKey) {
+      next.delete('space')
+      if (next.get('catalog') === 'media-type') next.delete('location')
+      setSearchParams(next, { replace: true })
+      return
+    }
+
+    const separator = nextKey.indexOf(':')
+    if (separator < 1) return
+    next.set('location', nextKey.slice(0, separator))
+    next.set('space', nextKey.slice(separator + 1))
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    const smoothScroll = lenis.current
+    if (!catalogModal || !smoothScroll) return
+
+    smoothScroll.stop()
+    return () => smoothScroll.start()
+  }, [catalogModal])
+
   const selectMediaType = useCallback((nextType: MediaType) => {
     if (nextType === mediaType) return
 
@@ -84,7 +215,6 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
   }, [mediaType])
 
   const selectExplorerView = useCallback((nextView: ExplorerView) => {
-    setExplorerMenuOpen(false)
     if (nextView === explorerView) return
 
     activeIndexRef.current = 0
@@ -182,27 +312,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
       const image = new Image()
       image.src = category.image
     })
-  }, [])
-
-  useEffect(() => {
-    if (!explorerMenuOpen) return
-
-    const closeMenu = (event: PointerEvent) => {
-      if (!explorerSwitcher.current?.contains(event.target as Node)) {
-        setExplorerMenuOpen(false)
-      }
-    }
-    const closeWithEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setExplorerMenuOpen(false)
-    }
-
-    window.addEventListener('pointerdown', closeMenu)
-    window.addEventListener('keydown', closeWithEscape)
-    return () => {
-      window.removeEventListener('pointerdown', closeMenu)
-      window.removeEventListener('keydown', closeWithEscape)
-    }
-  }, [explorerMenuOpen])
+  }, [availableLocations])
 
   useEffect(() => {
     const navigateWithKeyboard = (event: KeyboardEvent) => {
@@ -345,7 +455,12 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
           wheelMultiplier: 0.72,
           overscroll: true,
           prevent: (node) =>
-            Boolean(node.closest('.availability-explorer__media-list')),
+            Boolean(node.closest([
+              '.availability-explorer__media-list',
+              '.availability-catalog-modal__panel',
+              '.availability-space-detail__panel',
+              '.availability-selection__panel',
+            ].join(', '))),
         })
         lenis.current = smoothScroll
 
@@ -545,6 +660,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
   )
 
   return (
+    <>
     <main className="availability-page" ref={page}>
       <div className="availability-page__orb availability-page__orb--red" aria-hidden="true" />
       <div className="availability-page__orb availability-page__orb--blue" aria-hidden="true" />
@@ -616,46 +732,26 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
           >
           <aside className="availability-explorer__locations">
             <div
-              className={`availability-explorer__switcher${explorerMenuOpen ? ' is-open' : ''}`}
-              ref={explorerSwitcher}
+              className="availability-explorer__switcher"
+              role="group"
+              aria-label="Organizar espacios por"
             >
               <button
-                className="availability-explorer__switcher-trigger"
+                className={explorerView === 'locations' ? 'is-active' : undefined}
                 type="button"
-                aria-haspopup="menu"
-                aria-expanded={explorerMenuOpen}
-                aria-controls="availability-explorer-menu"
-                onClick={() => setExplorerMenuOpen((open) => !open)}
+                aria-pressed={explorerView === 'locations'}
+                onClick={() => selectExplorerView('locations')}
               >
-                <span>Explora</span>
-                <span className="availability-explorer__switcher-chevron" aria-hidden="true" />
+                Ubicación
               </button>
-
-              <div
-                id="availability-explorer-menu"
-                className="availability-explorer__switcher-menu"
-                role="menu"
-                aria-hidden={!explorerMenuOpen}
+              <button
+                className={explorerView === 'categories' ? 'is-active' : undefined}
+                type="button"
+                aria-pressed={explorerView === 'categories'}
+                onClick={() => selectExplorerView('categories')}
               >
-                <button
-                  className={explorerView === 'locations' ? 'is-active' : undefined}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={explorerView === 'locations'}
-                  onClick={() => selectExplorerView('locations')}
-                >
-                  <span>Por ubicación</span>
-                </button>
-                <button
-                  className={explorerView === 'categories' ? 'is-active' : undefined}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={explorerView === 'categories'}
-                  onClick={() => selectExplorerView('categories')}
-                >
-                  <span>Por tipo de medio</span>
-                </button>
-              </div>
+                Tipo de medio
+              </button>
             </div>
 
             <div className="availability-explorer__location-list">
@@ -715,7 +811,7 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
               <button
                 className="availability-explorer__contact"
                 type="button"
-                onClick={onContact}
+                onClick={openCatalogModal}
               >
                 Ver disponibilidad
                 <span aria-hidden="true">↗</span>
@@ -826,5 +922,21 @@ export function AvailabilityPage({ onContact }: AvailabilityPageProps) {
         </div>
       </div>
     </main>
+    <div className="availability-page__footer">
+      <SiteFooter onContact={onContact} />
+    </div>
+    {catalogModal && (
+      <AvailabilityCatalogModal
+        catalog={catalog}
+        context={catalogModal}
+        detailKey={detailKey}
+        selectedKeys={selectedSpaceKeys}
+        onClose={closeCatalogModal}
+        onDetailChange={setCatalogDetail}
+        onOpenSelection={onOpenSelection}
+        onSelectedKeysChange={onSelectedSpaceKeysChange}
+      />
+    )}
+    </>
   )
 }

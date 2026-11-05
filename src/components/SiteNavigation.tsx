@@ -13,6 +13,7 @@ type SiteNavigationProps = {
   lightSurface?: boolean
   temporarilyHidden?: boolean
   onContact: () => void
+  reserveSelectionSpace?: boolean
   onMedia: (
     event: React.MouseEvent<HTMLAnchorElement>,
     collectionId: 'indoor' | 'outdoor' | 'innovaciones',
@@ -31,6 +32,7 @@ export function SiteNavigation({
   lightSurface = false,
   temporarilyHidden = false,
   onContact,
+  reserveSelectionSpace = false,
   onMedia,
 }: SiteNavigationProps) {
   const location = useLocation()
@@ -273,6 +275,8 @@ export function SiteNavigation({
         revealed && compact && (menuOpen || butterflyHidden) ? ' is-open' : ''
       }${
         mediaOpen ? ' is-media-open' : ''
+      }${
+        reserveSelectionSpace ? ' site-nav--has-selection' : ''
       }`}
       aria-label="Navegación principal"
       aria-hidden={!revealed || temporarilyHidden}
@@ -327,17 +331,17 @@ export function SiteNavigation({
         >
           Inicio
         </a>
-        <button
-          type="button"
+        <Link
+          className="site-nav__availability-link"
+          to={location.pathname === '/disponibilidad' ? '/' : '/disponibilidad'}
           tabIndex={revealed && !temporarilyHidden ? 0 : -1}
           onClick={() => {
             setMenuOpen(false)
             setMediaOpen(false)
-            onContact()
           }}
         >
-          Contáctanos
-        </button>
+          {location.pathname === '/disponibilidad' ? 'Inicio' : 'Disponibilidad'}
+        </Link>
         <div
           className="site-nav__media"
           onMouseEnter={() => {
@@ -398,16 +402,17 @@ export function SiteNavigation({
             ))}
           </div>
         </div>
-        <Link
-          to="/disponibilidad"
+        <button
+          type="button"
           tabIndex={revealed && !temporarilyHidden ? 0 : -1}
           onClick={() => {
             setMenuOpen(false)
             setMediaOpen(false)
+            onContact()
           }}
         >
-          Disponibilidad
-        </Link>
+          Contáctanos
+        </button>
       </div>
     </nav>
   )

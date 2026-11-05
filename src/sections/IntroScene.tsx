@@ -1108,7 +1108,7 @@ export function IntroScene({
       />
 
       <div className="scroll-cue" ref={scrollCue} aria-hidden="true">
-        <span>Desliza para explorar</span>
+        <span>Desliza hacia arriba</span>
         <i />
       </div>
     </section>

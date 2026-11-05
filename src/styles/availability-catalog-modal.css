@@ -1,0 +1,791 @@
+.availability-catalog-modal__panel {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  color: #f7f5ef;
+  background:
+    radial-gradient(circle at 8% 4%, rgb(255 1 9 / 8%), transparent 28rem),
+    radial-gradient(circle at 94% 18%, rgb(0 176 244 / 7%), transparent 34rem),
+    #090a0d;
+}
+
+.availability-catalog-modal__bar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem clamp(1rem, 2.7vw, 3rem);
+  border-bottom: 1px solid rgb(247 245 239 / 12%);
+  background: rgb(9 10 13 / 82%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.availability-catalog-modal__close,
+.availability-catalog-modal__selection-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .72rem .95rem;
+  border: 1px solid rgb(247 245 239 / 15%);
+  border-radius: 999px;
+  background: rgb(247 245 239 / 3%);
+  color: rgb(247 245 239 / 72%);
+  font: inherit;
+  font-size: .713rem;
+  font-weight: 720;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.availability-catalog-modal__selection-trigger {
+  position: relative;
+  width: 3.55rem;
+  height: 3.55rem;
+  justify-content: center;
+  padding: .55rem;
+  color: #f7f5ef;
+  transition: border-color .25s ease, background-color .25s ease, transform .25s ease;
+}
+
+.availability-catalog-modal__selection-trigger:hover,
+.availability-catalog-modal__selection-trigger:focus-visible {
+  border-color: rgb(247 245 239 / 34%);
+  background: rgb(247 245 239 / 9%);
+  transform: translateY(-1px);
+}
+
+.availability-selection-icon {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: block;
+}
+
+.availability-selection-icon svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity .22s ease, transform .28s cubic-bezier(.2, .8, .2, 1);
+}
+
+.availability-selection-icon__open,
+.availability-selection-icon__filled {
+  opacity: 0;
+  transform: scale(.84) translateY(2px);
+}
+
+.availability-catalog-modal__selection-trigger:not(.has-items):hover .availability-selection-icon__closed,
+.availability-catalog-modal__selection-trigger:not(.has-items):focus-visible .availability-selection-icon__closed {
+  opacity: 0;
+  transform: scale(.88) translateY(2px);
+}
+
+.availability-catalog-modal__selection-trigger:not(.has-items):hover .availability-selection-icon__open,
+.availability-catalog-modal__selection-trigger:not(.has-items):focus-visible .availability-selection-icon__open,
+.availability-selection-icon.is-filled .availability-selection-icon__filled {
+  opacity: 1;
+  transform: none;
+}
+
+.availability-selection-icon.is-filled .availability-selection-icon__closed {
+  opacity: 0;
+  transform: scale(.84);
+}
+
+.availability-catalog-modal__selection-count {
+  position: absolute;
+  z-index: 2;
+  top: -.38rem;
+  right: -.38rem;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  display: grid;
+  place-items: center;
+  padding-inline: .25rem;
+  border: 2px solid #090a0d;
+  border-radius: 50%;
+  background: #f7f5ef;
+  color: #090a0d;
+  font-size: .575rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.availability-selection-flight {
+  position: fixed;
+  z-index: 145;
+  overflow: hidden;
+  border: 2px solid rgb(247 245 239 / 72%);
+  border-radius: clamp(1rem, 2vw, 2rem);
+  background: #090a0d;
+  box-shadow: 0 1.4rem 4rem rgb(0 0 0 / 48%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.availability-selection-flight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 45%, rgb(56 212 48 / 24%));
+}
+
+.availability-selection-flight img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.availability-catalog-modal__content {
+  padding: 0 clamp(1.25rem, 3.4vw, 4.25rem) clamp(4rem, 8vw, 8rem);
+}
+
+.availability-catalog-modal__hero {
+  min-height: clamp(27rem, 66vh, 46rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 1.5rem;
+  align-items: start;
+  padding-block: clamp(3rem, 7vw, 7rem) clamp(2.5rem, 5vw, 5rem);
+  box-sizing: border-box;
+}
+
+.availability-catalog-modal__hero > p,
+.availability-catalog-modal__hero h2 {
+  margin: 0;
+}
+
+.availability-catalog-modal__hero h2 {
+  grid-column: 1 / -1;
+  align-self: center;
+  max-width: 12ch;
+  font-size: clamp(3.5rem, 8vw, 9.5rem);
+  font-weight: 470;
+  line-height: .82;
+  letter-spacing: -.075em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.availability-catalog-modal__hero > p:last-child {
+  grid-column: 1 / -1;
+  max-width: 34rem;
+  color: rgb(247 245 239 / 68%);
+  font-size: clamp(.897rem, 1.1vw, 1.15rem);
+  line-height: 1.5;
+}
+
+.availability-catalog-modal__catalog-heading {
+  margin-top: clamp(3rem, 6vw, 6.5rem);
+  padding: 1.4rem 0 0;
+  border-top: 1px solid rgb(247 245 239 / 16%);
+}
+
+.availability-catalog-modal__catalog-heading > p {
+  margin: 0;
+  color: rgb(247 245 239 / 38%);
+  font-size: .713rem;
+}
+
+.availability-catalog-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(3rem, 6vw, 6.5rem) clamp(1.5rem, 4vw, 4.5rem);
+}
+
+.availability-catalog-card {
+  min-width: 0;
+}
+
+.availability-catalog-card__image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.42;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgb(247 245 239 / 12%);
+  border-radius: clamp(1rem, 1.6vw, 1.5rem);
+  background: rgb(247 245 239 / 5%);
+  cursor: pointer;
+}
+
+.availability-catalog-card__image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 58%, rgb(0 0 0 / 55%));
+}
+
+.availability-catalog-card__image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform .7s cubic-bezier(.2, .8, .2, 1), filter .5s ease;
+}
+
+.availability-catalog-card h3 {
+  margin: .85rem 0 .45rem;
+  font-size: clamp(1.55rem, 2.3vw, 2.75rem);
+  font-weight: 500;
+  line-height: .98;
+  letter-spacing: -.045em;
+  text-transform: uppercase;
+}
+
+.availability-catalog-card > p {
+  margin: 0;
+  color: rgb(247 245 239 / 45%);
+  font-size: .782rem;
+}
+
+.availability-catalog-card__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.availability-catalog-card__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .782rem;
+}
+
+.availability-catalog-card__meta i,
+.availability-space-detail__availability i {
+  width: .65rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #38d430;
+  box-shadow: 0 0 1rem rgb(56 212 48 / 35%);
+}
+
+.availability-catalog-card__meta i.is-low,
+.availability-space-detail__availability i.is-low {
+  background: #f4c542;
+  box-shadow: 0 0 1rem rgb(244 197 66 / 35%);
+}
+
+.availability-catalog-card__meta i.is-unavailable,
+.availability-space-detail__availability i.is-unavailable {
+  background: #ff0109;
+  box-shadow: 0 0 1rem rgb(255 1 9 / 35%);
+}
+
+.availability-catalog-card__meta > strong {
+  font-size: 1rem;
+}
+
+.availability-catalog-card__meta small,
+.availability-space-detail__price small {
+  color: rgb(247 245 239 / 44%);
+  font-size: .667rem;
+  font-weight: 500;
+}
+
+.availability-catalog-card__view {
+  margin-top: 1.45rem;
+  padding: .9rem 1.3rem;
+  border: 1px solid rgb(247 245 239 / 22%);
+  border-radius: 999px;
+  background: transparent;
+  color: #f7f5ef;
+  font: inherit;
+  font-size: .713rem;
+  font-weight: 720;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.availability-space-detail,
+.availability-selection {
+  position: fixed;
+  z-index: 130;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(.75rem, 3vw, 3rem);
+  box-sizing: border-box;
+  color: #f7f5ef;
+}
+
+.availability-space-detail__backdrop,
+.availability-selection__backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgb(3 4 5 / 75%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.availability-space-detail__panel {
+  position: relative;
+  z-index: 1;
+  width: min(74rem, 92%);
+  height: min(47rem, 88dvh);
+  min-height: 34rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgb(247 245 239 / 18%);
+  border-radius: clamp(1rem, 2vw, 2rem);
+  background: #090a0d;
+  box-shadow: 0 2rem 6rem rgb(0 0 0 / 60%);
+  animation: availability-dialog-in .42s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.availability-space-detail__close,
+.availability-selection__close {
+  position: absolute;
+  z-index: 4;
+  top: 1rem;
+  right: 1rem;
+  width: 2.7rem;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid rgb(247 245 239 / 18%);
+  border-radius: 50%;
+  background: rgb(9 10 13 / 65%);
+  color: #f7f5ef;
+  font: inherit;
+  font-size: 1.35rem;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.availability-space-detail__share {
+  position: absolute;
+  z-index: 4;
+  top: 1rem;
+  right: 4.45rem;
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  padding: .55rem 1rem;
+  border: 1px solid rgb(247 245 239 / 18%);
+  border-radius: 999px;
+  background: rgb(9 10 13 / 72%);
+  color: #f7f5ef;
+  font: inherit;
+  font-size: .667rem;
+  font-weight: 720;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.availability-space-detail__share > svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.availability-space-detail figure {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 1fr;
+  margin: 0;
+  overflow: hidden;
+  background: rgb(247 245 239 / 5%);
+}
+
+.availability-space-detail figure img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  object-position: center;
+}
+
+.availability-space-detail__copy {
+  position: relative;
+  z-index: 2;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(3.5rem, 5vw, 5.5rem) clamp(1.5rem, 3.5vw, 3.75rem);
+  border-left: 1px solid rgb(247 245 239 / 10%);
+  background: linear-gradient(90deg, rgb(9 10 13 / 88%), rgb(9 10 13 / 95%));
+}
+
+.availability-space-detail__copy h2 {
+  margin: 1.5rem 0 1.75rem;
+  font-size: clamp(2.1rem, 3.6vw, 4.5rem);
+  font-weight: 480;
+  line-height: .9;
+  letter-spacing: -.06em;
+  text-transform: uppercase;
+}
+
+.availability-space-detail__copy > p {
+  margin: 0;
+  color: rgb(247 245 239 / 52%);
+  font-size: .828rem;
+}
+
+.availability-space-detail__copy > strong {
+  margin-top: 1.25rem;
+  font-size: .943rem;
+  font-weight: 560;
+}
+
+.availability-space-detail__availability {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 1.7rem;
+  font-size: .828rem;
+}
+
+.availability-space-detail__price {
+  margin-top: 1.2rem;
+  font-size: 1.25rem;
+  font-weight: 720;
+}
+
+.availability-space-detail__note {
+  margin-top: 1.2rem !important;
+  font-size: .667rem !important;
+  line-height: 1.55;
+}
+
+.availability-space-detail__actions,
+.availability-selection__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .7rem;
+  margin-top: 2rem;
+}
+
+.availability-space-detail__actions button,
+.availability-selection__actions a,
+.availability-selection__actions button {
+  min-height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .75rem 1rem;
+  border: 1px solid rgb(247 245 239 / 24%);
+  border-radius: 999px;
+  background: transparent;
+  color: #f7f5ef;
+  font: inherit;
+  font-size: .621rem;
+  font-weight: 740;
+  letter-spacing: .1em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.availability-selection__panel {
+  position: relative;
+  z-index: 1;
+  width: min(46rem, 94%);
+  max-height: 92%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(2.25rem, 4vw, 4rem);
+  border: 1px solid rgb(247 245 239 / 18%);
+  border-radius: clamp(1rem, 2vw, 2rem);
+  background: #090a0d;
+  box-shadow: 0 2rem 6rem rgb(0 0 0 / 60%);
+  box-sizing: border-box;
+  animation: availability-dialog-in .42s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.availability-selection__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1.35rem;
+  color: #f7f5ef;
+  font-size: 1rem;
+  letter-spacing: .16em;
+}
+
+.availability-selection__brand img {
+  width: 2.2rem;
+  height: 2.45rem;
+  display: block;
+}
+
+.availability-selection__panel > p:first-of-type {
+  margin: 0;
+  color: rgb(247 245 239 / 62%);
+  font-size: .782rem;
+  font-weight: 720;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.availability-selection__panel h2 {
+  margin: 1.3rem 0 2rem;
+  font-size: clamp(3rem, 5vw, 5.25rem);
+  font-weight: 470;
+  line-height: .78;
+  letter-spacing: -.075em;
+  text-transform: uppercase;
+}
+
+.availability-selection__items {
+  display: grid;
+  margin-bottom: 1.5rem;
+  border-top: 1px solid rgb(247 245 239 / 14%);
+}
+
+.availability-selection__items > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 0;
+  border-bottom: 1px solid rgb(247 245 239 / 14%);
+}
+
+.availability-selection__items span,
+.availability-selection__items span > * {
+  display: block;
+}
+
+.availability-selection__items strong {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.availability-selection__items small,
+.availability-selection__items > p {
+  margin: .25rem 0 0;
+  color: rgb(247 245 239 / 62%);
+  font-size: .782rem;
+  line-height: 1.45;
+}
+
+.availability-selection__items > div > button {
+  padding: .4rem;
+  border: 0;
+  background: transparent;
+  color: rgb(247 245 239 / 65%);
+  font: inherit;
+  font-size: .713rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.availability-selection__panel label {
+  display: grid;
+  gap: .55rem;
+  margin-top: 1rem;
+  color: rgb(247 245 239 / 72%);
+  font-size: .828rem;
+}
+
+.availability-selection__panel input,
+.availability-selection__panel textarea {
+  width: 100%;
+  padding: .7rem 0;
+  border: 0;
+  border-bottom: 1px solid rgb(247 245 239 / 18%);
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  color: #f7f5ef;
+  font: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.availability-selection__panel input:focus,
+.availability-selection__panel textarea:focus {
+  border-color: #f7f5ef;
+}
+
+.availability-selection__actions a.is-disabled,
+.availability-selection__actions button.is-disabled {
+  opacity: .35;
+  pointer-events: none;
+}
+
+.availability-selection__actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.availability-selection__actions a,
+.availability-selection__actions button {
+  font-size: .713rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .availability-catalog-modal__close:hover,
+  .availability-catalog-modal__selection-trigger:hover,
+  .availability-catalog-card__view:hover,
+  .availability-space-detail__actions button:hover,
+  .availability-space-detail__share:hover,
+  .availability-selection__actions a:hover,
+  .availability-selection__actions button:hover {
+    border-color: #f7f5ef;
+    background: #f7f5ef;
+    color: #090a0d;
+  }
+
+  .availability-catalog-card__image:hover img {
+    filter: brightness(1.08);
+    transform: scale(1.035);
+  }
+}
+
+@keyframes availability-dialog-in {
+  from { opacity: 0; transform: translateY(1.5rem) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 800px) {
+  .availability-catalog-modal__content {
+    padding-inline: 1rem;
+  }
+
+  .availability-catalog-modal__hero {
+    min-height: 28rem;
+    padding-top: 3rem;
+  }
+
+  .availability-catalog-modal__hero h2 {
+    font-size: clamp(3.2rem, 14vw, 6rem);
+  }
+
+  .availability-catalog-modal__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-space-detail__panel {
+    width: min(34rem, 96%);
+    height: auto;
+    min-height: min(44rem, 94dvh);
+    max-height: 94dvh;
+    grid-template-columns: 1fr;
+  }
+
+  .availability-space-detail figure {
+    min-height: 0;
+  }
+
+  .availability-space-detail__copy {
+    grid-column: 1;
+    justify-content: flex-end;
+    padding: clamp(14rem, 38vh, 20rem) 1.25rem 1.5rem;
+    border-left: 0;
+    background: linear-gradient(
+      180deg,
+      rgb(9 10 13 / 4%) 0%,
+      rgb(9 10 13 / 90%) 32%,
+      rgb(9 10 13 / 98%) 58%
+    );
+  }
+}
+
+@media (max-width: 520px) {
+  .availability-catalog-modal {
+    padding: .35rem;
+  }
+
+  .availability-catalog-modal__bar {
+    padding: .75rem;
+  }
+
+  .availability-catalog-modal__close,
+  .availability-catalog-modal__selection-trigger {
+    padding: .65rem .75rem;
+    font-size: .621rem;
+  }
+
+  .availability-catalog-modal__hero {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 1rem;
+  }
+
+  .availability-catalog-modal__hero h2,
+  .availability-catalog-modal__hero > p:last-child {
+    grid-column: auto;
+  }
+
+  .availability-catalog-card__meta,
+  .availability-space-detail__actions,
+  .availability-selection__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-catalog-card__meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .availability-space-detail,
+  .availability-selection {
+    padding: .5rem;
+  }
+
+  .availability-space-detail__panel,
+  .availability-selection__panel {
+    width: 100%;
+    max-height: 98%;
+  }
+
+  .availability-selection__panel {
+    padding: 2.5rem 1.1rem 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .availability-space-detail__panel,
+  .availability-selection__panel,
+  .availability-catalog-card__image img {
+    animation: none;
+    transition: none;
+  }
+}

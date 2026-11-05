@@ -7,7 +7,9 @@ export function GET() {
     {
       status: 'ok',
       service: 'public-outdoors',
-      catalogConfigured: Boolean(process.env.CATALOG_API_URL),
+      catalogConfigured: Boolean(
+        process.env.CATALOG_API_URL && process.env.CATALOG_API_KEY,
+      ),
       timestamp: new Date().toISOString(),
     },
     { headers: { 'Cache-Control': 'no-store' } },

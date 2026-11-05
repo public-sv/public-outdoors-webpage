@@ -22,6 +22,12 @@
   pointer-events: none;
 }
 
+.availability-page__footer {
+  position: relative;
+  z-index: 1;
+  background: #07080b;
+}
+
 .availability-page__orb {
   position: fixed;
   z-index: -2;
@@ -341,103 +347,52 @@
 .availability-explorer__switcher {
   position: relative;
   z-index: 6;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: .2rem;
   align-self: flex-end;
+  padding: .25rem;
+  border: 1px solid rgb(247 245 239 / 13%);
+  border-radius: 999px;
+  background: rgb(247 245 239 / 5%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 7%) inset,
+    0 .65rem 1.8rem rgb(0 0 0 / 18%);
 }
 
-.availability-explorer__switcher-trigger {
+.availability-explorer__switcher button {
+  min-height: 2.35rem;
   display: inline-flex;
   align-items: center;
-  gap: .65rem;
-  padding: .35rem 0;
+  justify-content: center;
+  padding: .55rem .9rem;
   border: 0;
-  background: transparent;
-  color: rgb(247 245 239 / 48%);
-  font: inherit;
-  font-size: .69rem;
-  font-weight: 750;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color .3s ease;
-}
-
-.availability-explorer__switcher-chevron {
-  width: .36rem;
-  height: .36rem;
-  margin-top: -.2rem;
-  border-right: 1px solid currentColor;
-  border-bottom: 1px solid currentColor;
-  transform: rotate(45deg);
-  transition: transform .35s cubic-bezier(.2, .8, .2, 1);
-}
-
-.availability-explorer__switcher.is-open .availability-explorer__switcher-trigger {
-  color: #f7f5ef;
-}
-
-.availability-explorer__switcher.is-open .availability-explorer__switcher-chevron {
-  transform: translateY(.12rem) rotate(225deg);
-}
-
-.availability-explorer__switcher-menu {
-  position: absolute;
-  z-index: 8;
-  top: calc(100% + .65rem);
-  right: 0;
-  width: min(16.5rem, calc(100vw - 2rem));
-  display: grid;
-  padding: .42rem;
-  border: 1px solid rgb(247 245 239 / 14%);
-  border-radius: 1rem;
-  opacity: 0;
-  visibility: hidden;
-  background: #0a0c0f;
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 8%) inset,
-    0 1.2rem 3rem rgb(0 0 0 / 42%);
-  text-align: left;
-  transform: translateY(-.4rem) scale(.98);
-  transform-origin: top right;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  pointer-events: none;
-  transition:
-    opacity .25s ease,
-    visibility .25s ease,
-    transform .3s cubic-bezier(.2, .8, .2, 1);
-}
-
-.availability-explorer__switcher.is-open .availability-explorer__switcher-menu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
-
-.availability-explorer__switcher-menu button {
-  display: block;
-  padding: .85rem .9rem;
-  border: 0;
-  border-radius: .7rem;
+  border-radius: 999px;
   background: transparent;
   color: rgb(247 245 239 / 52%);
   font: inherit;
   font-size: .713rem;
-  font-weight: 650;
-  line-height: 1.2;
-  text-align: left;
+  font-weight: 680;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: color .25s ease, background-color .25s ease;
+  transition:
+    color .25s ease,
+    background-color .3s ease,
+    box-shadow .3s ease,
+    transform .25s ease;
 }
 
-.availability-explorer__switcher-menu button.is-active {
-  background: rgb(247 245 239 / 7%);
-  color: #f7f5ef;
+.availability-explorer__switcher button.is-active {
+  background: #f7f5ef;
+  color: #0a0c0f;
+  box-shadow:
+    0 .35rem 1rem rgb(0 0 0 / 25%),
+    0 1px 0 rgb(255 255 255 / 75%) inset;
 }
 
-.availability-explorer__switcher-trigger:focus-visible,
-.availability-explorer__switcher-menu button:focus-visible {
-  outline: 1px solid rgb(247 245 239 / 62%);
+.availability-explorer__switcher button:focus-visible {
+  outline: 2px solid #38d430;
   outline-offset: 2px;
 }
 
@@ -738,13 +693,10 @@
     color: rgb(247 245 239 / 72%);
   }
 
-  .availability-explorer__switcher-trigger:hover {
+  .availability-explorer__switcher button:not(.is-active):hover {
+    background: rgb(247 245 239 / 8%);
     color: #f7f5ef;
-  }
-
-  .availability-explorer__switcher-menu button:hover {
-    background: rgb(247 245 239 / 7%);
-    color: #f7f5ef;
+    transform: translateY(-1px);
   }
 
   .availability-explorer__tabs button:hover {
@@ -973,8 +925,7 @@
     animation: none;
   }
 
-  .availability-explorer__switcher-chevron,
-  .availability-explorer__switcher-menu {
+  .availability-explorer__switcher button {
     transition: none;
   }
 }

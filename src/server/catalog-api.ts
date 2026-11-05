@@ -1,13 +1,20 @@
 import 'server-only'
+import { normalizeCatalogResponse } from './normalize-catalog'
 
 const REQUEST_TIMEOUT_MS = 10_000
+const DEFAULT_API_KEY_HEADER = 'X-API-Key'
 
 export class CatalogConfigurationError extends Error {}
 
-function catalogApiUrl() {
+function catalogApiConfiguration() {
   const configuredUrl = process.env.CATALOG_API_URL
   if (!configuredUrl) {
     throw new CatalogConfigurationError('CATALOG_API_URL is not configured')
+  }
+
+  const apiKey = process.env.CATALOG_API_KEY
+  if (!apiKey) {
+    throw new CatalogConfigurationError('CATALOG_API_KEY is not configured')
   }
 
   const url = new URL(configuredUrl)
@@ -20,17 +27,22 @@ function catalogApiUrl() {
     throw new CatalogConfigurationError('CATALOG_API_URL must use HTTPS')
   }
 
-  return url
+  const apiKeyHeader = process.env.CATALOG_API_KEY_HEADER?.trim() || DEFAULT_API_KEY_HEADER
+  if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(apiKeyHeader)) {
+    throw new CatalogConfigurationError('CATALOG_API_KEY_HEADER is invalid')
+  }
+
+  return { apiKey, apiKeyHeader, url }
 }
 
 export async function fetchCatalog(searchParams: URLSearchParams) {
-  const url = catalogApiUrl()
+  const { apiKey, apiKeyHeader, url } = catalogApiConfiguration()
   searchParams.forEach((value, key) => url.searchParams.append(key, value))
 
-  const headers = new Headers({ Accept: 'application/json' })
-  if (process.env.CATALOG_API_TOKEN) {
-    headers.set('Authorization', `Bearer ${process.env.CATALOG_API_TOKEN}`)
-  }
+  const headers = new Headers({
+    Accept: 'application/json',
+    [apiKeyHeader]: apiKey,
+  })
 
   const response = await fetch(url, {
     headers,
@@ -47,5 +59,6 @@ export async function fetchCatalog(searchParams: URLSearchParams) {
     throw new Error('Catalog API returned an unsupported content type')
   }
 
-  return response.json() as Promise<unknown>
+  const payload: unknown = await response.json()
+  return normalizeCatalogResponse(payload)
 }

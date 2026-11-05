@@ -7,7 +7,12 @@ import {
 import { useCallback, useState } from 'react'
 import { PageMetadata } from './components/PageMetadata'
 import { ContactCard } from './components/ContactCard'
+import { AvailabilitySelectionAccess } from './components/AvailabilitySelectionAccess'
+import { AvailabilitySelectionModal } from './components/AvailabilitySelectionModal'
 import { SiteNavigation } from './components/SiteNavigation'
+import type { AvailabilityCatalog } from './data/availability'
+import { useAvailabilityCatalog } from './hooks/useAvailabilityCatalog'
+import { useAvailabilitySelection } from './hooks/useAvailabilitySelection'
 import { AvailabilityPage } from './views/AvailabilityPage'
 import { IndoorPage } from './views/IndoorPage'
 import { InnovationsPage } from './views/InnovationsPage'
@@ -58,6 +63,7 @@ function HomePage() {
         lightSurface={!navigationDark}
         onContact={() => setContactOpen(true)}
         onMedia={scrollToMedia}
+        reserveSelectionSpace
       />
 
       <main id="hero">
@@ -77,7 +83,19 @@ function HomePage() {
   )
 }
 
-function AvailabilityRoute() {
+interface AvailabilityRouteProps {
+  catalog: AvailabilityCatalog
+  selectedKeys: Set<string>
+  onOpenSelection: () => void
+  onSelectedKeysChange: (next: Set<string>) => void
+}
+
+function AvailabilityRoute({
+  catalog,
+  selectedKeys,
+  onOpenSelection,
+  onSelectedKeysChange,
+}: AvailabilityRouteProps) {
   const [contactOpen, setContactOpen] = useState(false)
 
   return (
@@ -86,9 +104,16 @@ function AvailabilityRoute() {
         revealed
         onContact={() => setContactOpen(true)}
         onMedia={() => undefined}
+        reserveSelectionSpace
       />
 
-      <AvailabilityPage onContact={() => setContactOpen(true)} />
+      <AvailabilityPage
+        catalog={catalog}
+        onContact={() => setContactOpen(true)}
+        onOpenSelection={onOpenSelection}
+        selectedSpaceKeys={selectedKeys}
+        onSelectedSpaceKeysChange={onSelectedKeysChange}
+      />
 
       {contactOpen && <ContactCard onClose={() => setContactOpen(false)} />}
     </>
@@ -97,6 +122,16 @@ function AvailabilityRoute() {
 
 function App() {
   const location = useLocation()
+  const [selectionOpen, setSelectionOpen] = useState(false)
+  const catalog = useAvailabilityCatalog()
+  const {
+    selectedKeys,
+    customerName,
+    campaignIdea,
+    setSelectedKeys,
+    setCustomerName,
+    setCampaignIdea,
+  } = useAvailabilitySelection()
   const backgroundLocation =
     location.pathname === '/disponibilidad'
       ? undefined
@@ -105,13 +140,27 @@ function App() {
   return (
     <>
       <PageMetadata />
+      <AvailabilitySelectionAccess
+        selectionCount={selectedKeys.size}
+        onOpen={() => setSelectionOpen(true)}
+      />
       <Routes location={backgroundLocation ?? location}>
         <Route path="/" element={<HomePage />} />
         <Route path="/indoor" element={<IndoorPage />} />
         <Route path="/outdoor" element={<OutdoorPage />} />
         <Route path="/innovaciones" element={<InnovationsPage />} />
         <Route path="/innovations" element={<Navigate to="/innovaciones" replace />} />
-        <Route path="/disponibilidad" element={<AvailabilityRoute />} />
+        <Route
+          path="/disponibilidad"
+          element={(
+            <AvailabilityRoute
+              catalog={catalog}
+              selectedKeys={selectedKeys}
+              onOpenSelection={() => setSelectionOpen(true)}
+              onSelectedKeysChange={setSelectedKeys}
+            />
+          )}
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
@@ -121,6 +170,19 @@ function App() {
           <Route path="/outdoor" element={<OutdoorPage modal />} />
           <Route path="/innovaciones" element={<InnovationsPage modal />} />
         </Routes>
+      )}
+
+      {selectionOpen && (
+        <AvailabilitySelectionModal
+          catalog={catalog}
+          selectedKeys={selectedKeys}
+          customerName={customerName}
+          campaignIdea={campaignIdea}
+          onClose={() => setSelectionOpen(false)}
+          onSelectedKeysChange={setSelectedKeys}
+          onCustomerNameChange={setCustomerName}
+          onCampaignIdeaChange={setCampaignIdea}
+        />
       )}
     </>
   )
