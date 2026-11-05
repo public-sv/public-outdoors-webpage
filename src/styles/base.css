@@ -446,6 +446,33 @@ body:has(.site-nav--light-surface) .site-selection-access {
 }
 
 @media (max-width: 600px) {
+  .site-nav__menu {
+    right: 1rem;
+    left: 1rem;
+    justify-content: space-between;
+    gap: 0;
+    padding: .3rem .85rem;
+  }
+
+  .site-nav__menu > button,
+  .site-nav__menu > a,
+  .site-nav__media > button {
+    min-height: 2.2rem;
+    padding: .25rem .3rem;
+    font-size: .64rem;
+    letter-spacing: .105em;
+  }
+
+  .site-nav__media > button {
+    gap: .25rem;
+  }
+
+  .site-nav__media-chevron {
+    width: .27rem;
+    height: .27rem;
+    margin: -.14rem 0 0 .03rem;
+  }
+
   .site-selection-access:not(.has-items) {
     display: none;
   }
@@ -455,6 +482,8 @@ body:has(.site-nav--light-surface) .site-selection-access {
   }
 
   .site-nav__selection-island {
-    top: calc(.85rem + var(--site-nav-pill-height) + .65rem);
+    top: auto;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
