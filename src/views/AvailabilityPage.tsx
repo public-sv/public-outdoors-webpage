@@ -34,7 +34,8 @@ export function AvailabilityPage({
   const explorerStory = useRef<HTMLDivElement>(null)
   const explorerStage = useRef<HTMLElement>(null)
   const direction = useRef(1)
-  const swipeStart = useRef<number | null>(null)
+  const mobileCarousel = useRef<HTMLDivElement>(null)
+  const carouselFrame = useRef<number | null>(null)
   const hasRenderedLocation = useRef(false)
   const activeIndexRef = useRef(0)
   const scrollTarget = useRef<number | null>(null)
@@ -206,6 +207,7 @@ export function AvailabilityPage({
     setMediaType(nextType)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        mobileCarousel.current?.scrollTo({ left: 0, behavior: 'auto' })
         explorerStory.current?.scrollIntoView({
           behavior: 'auto',
           block: 'start',
@@ -224,6 +226,7 @@ export function AvailabilityPage({
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        mobileCarousel.current?.scrollTo({ left: 0, behavior: 'auto' })
         explorerStory.current?.scrollIntoView({
           behavior: 'auto',
           block: 'start',
@@ -259,12 +262,53 @@ export function AvailabilityPage({
     setActiveIndex(boundedIndex)
   }, [explorerItems.length])
 
+  const syncNativeCarousel = useCallback((carousel: HTMLDivElement) => {
+    if (carouselFrame.current !== null) {
+      cancelAnimationFrame(carouselFrame.current)
+    }
+
+    carouselFrame.current = requestAnimationFrame(() => {
+      const slideWidth = carousel.clientWidth
+      if (slideWidth === 0) {
+        carouselFrame.current = null
+        return
+      }
+
+      const nextIndex = Math.max(
+        0,
+        Math.min(
+          explorerItems.length - 1,
+          Math.round(carousel.scrollLeft / slideWidth),
+        ),
+      )
+
+      carouselFrame.current = null
+      activateExplorerItem(nextIndex)
+    })
+  }, [activateExplorerItem, explorerItems.length])
+
+  useEffect(() => () => {
+    if (carouselFrame.current !== null) {
+      cancelAnimationFrame(carouselFrame.current)
+    }
+  }, [])
+
   const goToExplorerItem = useCallback(
     (nextIndex: number) => {
       const boundedIndex = Math.max(
         0,
         Math.min(explorerItems.length - 1, nextIndex),
       )
+
+      if (window.matchMedia('(max-width: 900px)').matches) {
+        activateExplorerItem(boundedIndex)
+        const carousel = mobileCarousel.current
+        carousel?.scrollTo({
+          left: (carousel?.clientWidth ?? 0) * boundedIndex,
+          behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        })
+        return
+      }
 
       if (!window.matchMedia('(min-width: 1101px)').matches) {
         activateExplorerItem(boundedIndex)
@@ -624,7 +668,7 @@ export function AvailabilityPage({
       const timeline = gsap
         .timeline()
         .fromTo(
-          '.availability-explorer__image',
+          '.availability-explorer__image-frame--desktop .availability-explorer__image',
           { autoAlpha: 0.7, scale: 1.012 },
           {
             autoAlpha: 1,
@@ -780,23 +824,48 @@ export function AvailabilityPage({
           </aside>
 
           <div className="availability-explorer__stage">
-            <div
-              className="availability-explorer__image-frame"
-              onPointerDown={(event) => {
-                swipeStart.current = event.clientX
-              }}
-              onPointerUp={(event) => {
-                if (swipeStart.current === null) return
-                const distance = event.clientX - swipeStart.current
-                swipeStart.current = null
-                if (Math.abs(distance) < 48) return
-                goToExplorerItem(activeIndexRef.current + (distance < 0 ? 1 : -1))
-              }}
-            >
+            <div className="availability-explorer__stage-heading">
+              <h2
+                className="availability-explorer__mobile-title"
+                aria-live="polite"
+              >
+                {explorerItems[activeIndex]?.name}
+              </h2>
+              <div
+                className="availability-explorer__switcher availability-explorer__switcher--mobile"
+                role="group"
+                aria-label="Organizar espacios por"
+              >
+                <button
+                  className={explorerView === 'locations' ? 'is-active' : undefined}
+                  type="button"
+                  aria-pressed={explorerView === 'locations'}
+                  onClick={() => selectExplorerView('locations')}
+                >
+                  Ubicación
+                </button>
+                <button
+                  className={explorerView === 'categories' ? 'is-active' : undefined}
+                  type="button"
+                  aria-label="Tipo de medio"
+                  aria-pressed={explorerView === 'categories'}
+                  onClick={() => selectExplorerView('categories')}
+                >
+                  <span className="availability-explorer__switcher-label--full">
+                    Tipo de medio
+                  </span>
+                  <span className="availability-explorer__switcher-label--short" aria-hidden="true">
+                    Medio
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div className="availability-explorer__image-frame availability-explorer__image-frame--desktop">
               <img
                 className="availability-explorer__image"
                 src={activeImage}
                 alt={activeImageAlt}
+                draggable={false}
               />
               <div className="availability-explorer__image-shade" aria-hidden="true" />
               <p className="availability-explorer__photo-label">
@@ -805,6 +874,39 @@ export function AvailabilityPage({
               <p className="availability-explorer__image-index">
                 {String(activeIndex + 1).padStart(2, '0')} — {activeImageLabel}
               </p>
+            </div>
+
+            <div
+              className="availability-explorer__image-carousel"
+              ref={mobileCarousel}
+              onScroll={(event) => syncNativeCarousel(event.currentTarget)}
+              aria-label={
+                explorerView === 'locations'
+                  ? 'Carrusel de ubicaciones'
+                  : 'Carrusel de tipos de medio'
+              }
+            >
+              {explorerItems.map((item, index) => (
+                <div
+                  className="availability-explorer__image-slide"
+                  aria-label={`${index + 1} de ${explorerItems.length}: ${item.name}`}
+                  key={item.id}
+                >
+                  <img
+                    className="availability-explorer__image"
+                    src={item.image}
+                    alt={item.imageAlt}
+                    draggable={false}
+                  />
+                  <div className="availability-explorer__image-shade" aria-hidden="true" />
+                  <p className="availability-explorer__photo-label">
+                    Fotografía / PUBLIC
+                  </p>
+                  <p className="availability-explorer__image-index">
+                    {String(index + 1).padStart(2, '0')} — {item.name}
+                  </p>
+                </div>
+              ))}
             </div>
 
             <div className="availability-explorer__stage-actions">

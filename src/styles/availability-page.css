@@ -430,10 +430,21 @@
 }
 
 .availability-explorer__location > strong {
+  position: relative;
+  z-index: 2;
   font-size: clamp(.782rem, .92vw, .943rem);
   font-weight: 520;
   line-height: 1.2;
   letter-spacing: -.015em;
+}
+
+.availability-explorer__mobile-title {
+  display: none;
+}
+
+.availability-explorer__stage-heading,
+.availability-explorer__switcher--mobile {
+  display: none;
 }
 
 .availability-explorer__location.is-active {
@@ -472,7 +483,10 @@
   border-radius: clamp(1.25rem, 2vw, 2rem);
   background: rgb(247 245 239 / 5%);
   box-shadow: 0 2rem 5rem rgb(0 0 0 / 28%);
-  touch-action: pan-y;
+}
+
+.availability-explorer__image-carousel {
+  display: none;
 }
 
 .availability-explorer__image {
@@ -482,6 +496,9 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
   will-change: opacity;
 }
 
@@ -763,27 +780,46 @@
 
 @media (max-width: 900px) {
   .availability-page__intro {
+    grid-template-rows: minmax(0, 1fr) auto;
     padding-top: 6.7rem;
     padding-bottom: 2rem;
   }
 
   .availability-page__intro h1 {
+    align-self: center;
+    margin: 0 auto clamp(2.5rem, 6svh, 4.5rem);
     font-size: clamp(4rem, 15.5vw, 7.5rem);
     line-height: .78;
+    text-align: center;
+  }
+
+  .availability-page__title-line {
+    padding-right: .08em;
+    padding-left: .08em;
+  }
+
+  .availability-page__title-line > span {
+    margin-inline: auto;
   }
 
   .availability-page__intro-footer {
+    width: 100%;
+    align-self: end;
     grid-template-columns: 1fr minmax(14rem, 18rem);
   }
 
   .availability-explorer {
-    --availability-image-height: clamp(21rem, 72vw, 34rem);
+    --availability-image-height: clamp(14rem, 48vw, 25rem);
 
     grid-template-columns: minmax(0, 1fr);
   }
 
   .availability-explorer__tabs {
-    top: 6.1rem;
+    top: 3.75rem;
+  }
+
+  .availability-explorer--fijo {
+    padding-top: 7.3rem;
   }
 
   .availability-explorer__locations,
@@ -791,40 +827,127 @@
     grid-column: auto;
   }
 
-  .availability-explorer__location-list {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(10rem, 42vw);
-    gap: .45rem;
+  .availability-explorer__locations {
+    display: none;
+  }
+
+  .availability-explorer__stage {
+    display: flex;
+  }
+
+  .availability-explorer__stage-heading {
+    min-height: 4.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: .9rem;
+  }
+
+  .availability-explorer__switcher--mobile {
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    align-self: end;
+    gap: .15rem;
+    padding: .2rem;
+  }
+
+  .availability-explorer__switcher--mobile button {
+    min-height: 2.1rem;
+    padding: .45rem .7rem;
+    border-radius: 999px;
+    font-size: .58rem;
+    letter-spacing: .06em;
+  }
+
+  .availability-explorer__switcher--mobile button::after {
+    content: none;
+  }
+
+  .availability-explorer__switcher--mobile button.is-active {
+    background: #f7f5ef;
+    color: #0a0c0f;
+    box-shadow:
+      0 .35rem 1rem rgb(0 0 0 / 25%),
+      0 1px 0 rgb(255 255 255 / 75%) inset;
+  }
+
+  .availability-explorer__switcher-label--short {
+    display: none;
+  }
+
+  .availability-explorer__switcher--mobile button:not(.is-active):hover {
+    background: rgb(247 245 239 / 8%);
+    color: #f7f5ef;
+    transform: translateY(-1px);
+  }
+
+  .availability-explorer__image-frame--desktop {
+    display: none;
+  }
+
+  .availability-explorer__image-carousel {
+    width: 100%;
+    height: var(--availability-image-height);
+    min-height: 0;
+    display: flex;
     overflow-x: auto;
-    margin-right: -1.15rem;
-    padding: 0 1.15rem .8rem 0;
-    scroll-snap-type: x proximity;
+    overflow-y: hidden;
+    border: 1px solid rgb(247 245 239 / 14%);
+    border-radius: clamp(1.25rem, 2vw, 2rem);
+    background: rgb(247 245 239 / 5%);
+    box-shadow: 0 2rem 5rem rgb(0 0 0 / 28%);
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
     scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .availability-explorer__location-list::-webkit-scrollbar { display: none; }
-
-  .availability-explorer__location {
-    min-height: 3.8rem;
-    padding: .7rem .85rem;
-    border: 1px solid rgb(247 245 239 / 10%);
-    border-radius: 1rem;
-    background: rgb(247 245 239 / 3%);
-    scroll-snap-align: start;
+  .availability-explorer__image-carousel::-webkit-scrollbar {
+    display: none;
   }
 
-  .availability-explorer__location::before { display: none; }
-
-  .availability-explorer__location.is-active {
-    border-color: rgb(247 245 239 / 28%);
-    background: rgb(247 245 239 / 9%);
-    transform: none;
+  .availability-explorer__image-slide {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    flex: 0 0 100%;
+    overflow: hidden;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    user-select: none;
   }
 
-  .availability-explorer__location.is-active > strong {
-    font-size: clamp(.9rem, 2.5vw, 1.1rem);
-    line-height: 1.2;
-    letter-spacing: -.015em;
+  .availability-explorer__mobile-title {
+    display: block;
+    margin: 0;
+    color: #f7f5ef;
+    font-size: clamp(1.75rem, 5.5vw, 3rem);
+    font-weight: 520;
+    line-height: .98;
+    letter-spacing: -.055em;
+    text-align: left;
+    text-wrap: balance;
+  }
+
+  .availability-explorer__inventory {
+    max-height: min(23rem, 48dvh);
+    display: flex;
+    margin-top: .65rem;
+    padding: clamp(1.1rem, 3vw, 1.45rem);
+    border-radius: clamp(1.15rem, 3vw, 1.6rem);
+    background: rgb(10 12 16 / 72%);
+  }
+
+  .availability-explorer__inventory-heading {
+    padding-bottom: .85rem;
+  }
+
+  .availability-explorer__media-list {
+    padding-top: .2rem;
   }
 
   .availability-explorer__hint { display: none; }
@@ -847,26 +970,28 @@
 
   .availability-page__lede {
     font-size: .713rem;
+    text-align: center;
   }
 
   .availability-page__intro {
     padding-top: 6.2rem;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1.75rem;
   }
 
   .availability-page__intro h1 {
     align-self: center;
-    margin-block: 2rem;
+    margin: 0 auto clamp(2.5rem, 7svh, 4rem);
     font-size: clamp(3rem, 15.5vw, 6rem);
   }
 
   .availability-page__intro-footer {
     grid-template-columns: 1fr;
+    justify-items: center;
     gap: 1.5rem;
   }
 
   .availability-page__explore {
-    width: 100%;
+    display: none;
   }
 
   .availability-explorer__contact {
@@ -874,11 +999,11 @@
   }
 
   .availability-explorer--fijo {
-    padding-top: 9.5rem;
+    padding-top: 7rem;
   }
 
   .availability-explorer__tabs {
-    top: 5.8rem;
+    top: 3.5rem;
     gap: 1.25rem;
   }
 
@@ -909,6 +1034,45 @@
 
   .availability-explorer__photo-label { left: 1rem; }
   .availability-explorer__image-index { right: 1rem; }
+
+  .availability-explorer__stage-heading {
+    min-height: 4rem;
+    gap: .75rem;
+  }
+
+  .availability-explorer__switcher--mobile {
+    gap: .1rem;
+    padding: .16rem;
+  }
+
+  .availability-explorer__switcher--mobile button {
+    font-size: .56rem;
+    padding-inline: .6rem;
+  }
+
+  .availability-explorer__inventory {
+    max-height: none;
+  }
+
+  .availability-explorer__media-list {
+    overflow: visible;
+    padding-right: 0;
+    scrollbar-width: none;
+  }
+
+  .availability-explorer__scroll-cue {
+    display: none;
+  }
+}
+
+@media (max-width: 440px) {
+  .availability-explorer__switcher-label--full {
+    display: none;
+  }
+
+  .availability-explorer__switcher-label--short {
+    display: inline;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
