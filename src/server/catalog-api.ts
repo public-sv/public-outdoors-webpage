@@ -3,6 +3,7 @@ import { normalizeCatalogResponse } from './normalize-catalog'
 
 const REQUEST_TIMEOUT_MS = 10_000
 const DEFAULT_API_KEY_HEADER = 'X-API-Key'
+export const CATALOG_CACHE_TTL_SECONDS = 5 * 60
 
 export class CatalogConfigurationError extends Error {}
 
@@ -46,7 +47,11 @@ export async function fetchCatalog(searchParams: URLSearchParams) {
 
   const response = await fetch(url, {
     headers,
-    cache: 'no-store',
+    cache: 'force-cache',
+    next: {
+      revalidate: CATALOG_CACHE_TTL_SECONDS,
+      tags: ['availability-catalog'],
+    },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   })
 

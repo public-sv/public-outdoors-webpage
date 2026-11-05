@@ -83,8 +83,9 @@ deploys explicitly disable indexing in `netlify.toml`.
   endpoint from the server. If the endpoint is not configured it returns `503`;
   upstream failures return `502`.
 
-The gateway applies a 10-second timeout, requires JSON responses, disables
-caching for now, and keeps `CATALOG_API_KEY` off the client. The browser only
+The gateway applies a 10-second timeout, requires JSON responses, caches each
+request variant for five minutes, and keeps `CATALOG_API_KEY` off the client.
+The browser also reuses catalog data in memory and through HTTP caching. It only
 calls the same-origin `/api/catalog` gateway; if the upstream service is not
 configured, fails, or returns an invalid catalog, the availability interface
 continues using the local TypeScript catalog.

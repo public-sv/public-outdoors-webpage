@@ -208,6 +208,15 @@ main {
   z-index: 90;
 }
 
+body:has(.site-nav--light-surface) .site-selection-access {
+  border-color: rgb(23 61 53 / 18%);
+  background: rgb(247 245 239 / 74%);
+  color: #173d35;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 55%) inset,
+    0 .75rem 2.2rem rgb(23 61 53 / 8%);
+}
+
 .site-nav__selection-island .availability-selection-icon {
   width: 1.9rem;
   height: 1.9rem;
@@ -398,6 +407,11 @@ main {
     border-color: rgb(255 255 255 / 32%);
     background: rgb(7 8 11 / 92%);
     transform: translateY(-1px);
+  }
+
+  body:has(.site-nav--light-surface) .site-selection-access:hover {
+    border-color: rgb(23 61 53 / 28%);
+    background: rgb(247 245 239 / 90%);
   }
 }
 

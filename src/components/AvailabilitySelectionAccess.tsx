@@ -17,9 +17,11 @@ export function AvailabilitySelectionAccess({
       onClick={onOpen}
     >
       <AvailabilitySelectionIcon hasItems={selectionCount > 0} />
-      <span className="site-nav__selection-count" aria-hidden="true">
-        {selectionCount}
-      </span>
+      {selectionCount > 0 && (
+        <span className="site-nav__selection-count" aria-hidden="true">
+          {selectionCount}
+        </span>
+      )}
     </button>
   )
 }

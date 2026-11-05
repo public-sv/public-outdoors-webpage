@@ -123,6 +123,8 @@ function AvailabilityRoute({
 function App() {
   const location = useLocation()
   const [selectionOpen, setSelectionOpen] = useState(false)
+  const openSelection = useCallback(() => setSelectionOpen(true), [])
+  const closeSelection = useCallback(() => setSelectionOpen(false), [])
   const catalog = useAvailabilityCatalog()
   const {
     selectedKeys,
@@ -142,7 +144,7 @@ function App() {
       <PageMetadata />
       <AvailabilitySelectionAccess
         selectionCount={selectedKeys.size}
-        onOpen={() => setSelectionOpen(true)}
+        onOpen={openSelection}
       />
       <Routes location={backgroundLocation ?? location}>
         <Route path="/" element={<HomePage />} />
@@ -156,7 +158,7 @@ function App() {
             <AvailabilityRoute
               catalog={catalog}
               selectedKeys={selectedKeys}
-              onOpenSelection={() => setSelectionOpen(true)}
+              onOpenSelection={openSelection}
               onSelectedKeysChange={setSelectedKeys}
             />
           )}
@@ -178,7 +180,7 @@ function App() {
           selectedKeys={selectedKeys}
           customerName={customerName}
           campaignIdea={campaignIdea}
-          onClose={() => setSelectionOpen(false)}
+          onClose={closeSelection}
           onSelectedKeysChange={setSelectedKeys}
           onCustomerNameChange={setCustomerName}
           onCampaignIdeaChange={setCampaignIdea}

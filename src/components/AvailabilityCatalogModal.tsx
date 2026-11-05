@@ -298,21 +298,26 @@ export function AvailabilityCatalogModal({
   const shareActiveEntry = async () => {
     if (!activeEntry) return
 
+    const shareUrl = new URL('/disponibilidad', window.location.origin)
+    shareUrl.searchParams.set(
+      'catalog',
+      context.view === 'locations' ? 'location' : 'media-type',
+    )
+    if (context.view === 'categories') {
+      shareUrl.searchParams.set('type', context.itemId)
+    }
+    shareUrl.searchParams.set('location', activeEntry.location.id)
+    shareUrl.searchParams.set('space', activeEntry.space.id)
+
     const shareData = {
       title: `${activeEntry.space.name} | PUBLIC`,
-      text: `${activeEntry.space.name} en ${activeEntry.location.name}`,
-      url: window.location.href,
+      text: `${activeEntry.space.name} en ${activeEntry.location.name}\n${shareUrl.toString()}`,
+      url: shareUrl.toString(),
     }
 
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-        return
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return
-      }
-    }
-
+    // Keep a canonical copy on the clipboard before handing control to the
+    // browser share sheet. Some desktop share targets otherwise copy the URL
+    // of the underlying location instead of this individual space.
     try {
       await navigator.clipboard.writeText(shareData.url)
     } catch {
@@ -334,6 +339,18 @@ export function AvailabilityCatalogModal({
       setShareCopied(false)
       shareFeedbackTimer.current = null
     }, 2200)
+
+    const useNativeShare =
+      typeof navigator.share === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches
+
+    if (useNativeShare) {
+      try {
+        await navigator.share(shareData)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+      }
+    }
   }
 
   return (
@@ -370,9 +387,11 @@ export function AvailabilityCatalogModal({
             onClick={onOpenSelection}
           >
             <AvailabilitySelectionIcon hasItems={selectedKeys.size > 0} />
-            <span className="availability-catalog-modal__selection-count" aria-hidden="true">
-              {selectedKeys.size}
-            </span>
+            {selectedKeys.size > 0 && (
+              <span className="availability-catalog-modal__selection-count" aria-hidden="true">
+                {selectedKeys.size}
+              </span>
+            )}
           </button>
         </header>
 

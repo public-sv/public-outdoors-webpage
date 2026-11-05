@@ -3,12 +3,23 @@ export interface QuotePdfEntry {
   name: string
   price: number
   priceLabel: string
+  url: string
 }
 
 interface QuotePdfOptions {
   campaignIdea: string
   customerName: string
   entries: QuotePdfEntry[]
+}
+
+interface PdfLink {
+  rect: [number, number, number, number]
+  url: string
+}
+
+interface PdfPage {
+  links: PdfLink[]
+  stream: string
 }
 
 const pageWidth = 595
@@ -78,6 +89,7 @@ function buildPage(
     year: 'numeric',
   }).format(new Date())
   let stream = '0.035 0.043 0.043 rg 0 0 595 842 re f\n'
+  const links: PdfLink[] = []
   stream += '1 0.004 0.035 rg 0 830 198 12 re f\n'
   stream += '0 0.69 0.957 rg 198 830 199 12 re f\n'
   stream += '0.22 0.831 0.188 rg 397 830 198 12 re f\n'
@@ -104,8 +116,13 @@ function buildPage(
   entries.forEach((entry) => {
     stream += textLine(entry.name.toUpperCase(), 48, y, 11, 'F2')
     stream += textLine(`${entry.locationName}  /  ${entry.priceLabel}`, 48, y - 16, 8, 'F1', '0.58 0.62 0.6')
+    stream += textLine('VER EN PUBLIC', 390, y - 16, 7, 'F2', '0 0.69 0.957')
     stream += textLine(money(entry.price), 478, y - 1, 11, 'F2')
     stream += `0.12 0.15 0.14 RG 48 ${y - 29} m 547 ${y - 29} l S\n`
+    links.push({
+      rect: [48, y - 24, 462, y + 15],
+      url: entry.url,
+    })
     y -= 48
   })
 
@@ -124,7 +141,7 @@ function buildPage(
     '0.45 0.5 0.48',
   )
   stream += textLine('marketing@publicsv.net  /  +503 7840-0641', 48, 29, 7, 'F1', '0.45 0.5 0.48')
-  return stream
+  return { links, stream }
 }
 
 function latin1Bytes(value: string) {
@@ -135,7 +152,7 @@ function latin1Bytes(value: string) {
   return bytes
 }
 
-function createPdfBlob(pages: string[]) {
+function createPdfBlob(pages: PdfPage[]) {
   const objects = new Map<number, string>()
   const pageReferences: string[] = []
 
@@ -143,20 +160,34 @@ function createPdfBlob(pages: string[]) {
   objects.set(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>')
   objects.set(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>')
 
-  pages.forEach((stream, index) => {
+  let nextAnnotationObject = 5 + pages.length * 2
+
+  pages.forEach(({ links, stream }, index) => {
     const pageObject = 5 + index * 2
     const streamObject = pageObject + 1
+    const annotationReferences = links.map((link) => {
+      const annotationObject = nextAnnotationObject
+      nextAnnotationObject += 1
+      objects.set(
+        annotationObject,
+        `<< /Type /Annot /Subtype /Link /Rect [${link.rect.join(' ')}] /Border [0 0 0] /H /I /A << /S /URI /URI (${pdfSafeText(link.url)}) >> >>`,
+      )
+      return `${annotationObject} 0 R`
+    })
+    const annotations = annotationReferences.length
+      ? ` /Annots [${annotationReferences.join(' ')}]`
+      : ''
     pageReferences.push(`${pageObject} 0 R`)
     objects.set(
       pageObject,
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamObject} 0 R >>`,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamObject} 0 R${annotations} >>`,
     )
     objects.set(streamObject, `<< /Length ${stream.length} >>\nstream\n${stream}endstream`)
   })
 
   objects.set(2, `<< /Type /Pages /Kids [${pageReferences.join(' ')}] /Count ${pages.length} >>`)
 
-  const objectCount = 4 + pages.length * 2
+  const objectCount = nextAnnotationObject - 1
   let pdf = '%PDF-1.4\n%âãÏÓ\n'
   const offsets = [0]
   for (let objectNumber = 1; objectNumber <= objectCount; objectNumber += 1) {
@@ -172,9 +203,7 @@ function createPdfBlob(pages: string[]) {
   return new Blob([latin1Bytes(pdf)], { type: 'application/pdf' })
 }
 
-export function downloadQuotePdf(options: QuotePdfOptions) {
-  if (!options.entries.length) return
-
+export function createQuotePdfBlob(options: QuotePdfOptions) {
   const pageCount = Math.ceil(options.entries.length / entriesPerPage)
   const pages = Array.from({ length: pageCount }, (_, index) =>
     buildPage(
@@ -184,7 +213,13 @@ export function downloadQuotePdf(options: QuotePdfOptions) {
       pageCount,
     ),
   )
-  const url = URL.createObjectURL(createPdfBlob(pages))
+  return createPdfBlob(pages)
+}
+
+export function downloadQuotePdf(options: QuotePdfOptions) {
+  if (!options.entries.length) return
+
+  const url = URL.createObjectURL(createQuotePdfBlob(options))
   const download = document.createElement('a')
   const date = new Date().toISOString().slice(0, 10)
   download.href = url

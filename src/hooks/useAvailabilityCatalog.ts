@@ -5,26 +5,59 @@ import {
   type AvailabilityCatalog,
 } from '../data/availability'
 
+const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000
+
+let cachedCatalog: { value: AvailabilityCatalog; expiresAt: number } | null = null
+let pendingCatalogRequest: Promise<AvailabilityCatalog | null> | null = null
+
+function requestCatalog() {
+  if (cachedCatalog && cachedCatalog.expiresAt > Date.now()) {
+    return Promise.resolve(cachedCatalog.value)
+  }
+
+  if (pendingCatalogRequest) return pendingCatalogRequest
+
+  pendingCatalogRequest = fetch('/api/catalog', {
+    headers: { Accept: 'application/json' },
+  })
+    .then(async (response) => {
+      if (!response.ok) return null
+      const payload: unknown = await response.json()
+      return isAvailabilityCatalog(payload) ? payload : null
+    })
+    .then((payload) => {
+      if (payload) {
+        cachedCatalog = {
+          value: payload,
+          expiresAt: Date.now() + CLIENT_CACHE_TTL_MS,
+        }
+      }
+      return payload
+    })
+    .finally(() => {
+      pendingCatalogRequest = null
+    })
+
+  return pendingCatalogRequest
+}
+
 export function useAvailabilityCatalog() {
-  const [catalog, setCatalog] = useState<AvailabilityCatalog>(fallbackAvailabilityCatalog)
+  const [catalog, setCatalog] = useState<AvailabilityCatalog>(
+    () => cachedCatalog?.value ?? fallbackAvailabilityCatalog,
+  )
 
   useEffect(() => {
-    const controller = new AbortController()
+    let active = true
 
-    fetch('/api/catalog', { headers: { Accept: 'application/json' }, signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) return null
-        const payload: unknown = await response.json()
-        return isAvailabilityCatalog(payload) ? payload : null
-      })
+    requestCatalog()
       .then((payload) => {
-        if (payload) setCatalog(payload)
+        if (active && payload) setCatalog(payload)
       })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
-      })
+      .catch(() => undefined)
 
-    return () => controller.abort()
+    return () => {
+      active = false
+    }
   }, [])
 
   return catalog

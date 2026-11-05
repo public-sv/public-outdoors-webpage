@@ -660,6 +660,159 @@
   font-size: .713rem;
 }
 
+.availability-selection__motion {
+  position: relative;
+  z-index: 1;
+  width: min(46rem, 94%);
+  max-height: 92dvh;
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.availability-selection__motion > .availability-selection__panel {
+  width: 100%;
+  max-height: 92dvh;
+}
+
+/*
+ * Contact-card theme experiment for Mi selección.
+ * To discard it, remove the availability-selection--contact-theme class from
+ * the component and this entire scoped block; the dark theme stays intact.
+ */
+.availability-selection--contact-theme {
+  color: #090b0d;
+}
+
+.availability-selection--contact-theme .availability-selection__backdrop {
+  background: rgb(5 7 9 / 56%);
+  backdrop-filter: blur(22px) saturate(.72);
+  -webkit-backdrop-filter: blur(22px) saturate(.72);
+}
+
+.availability-selection--contact-theme .availability-selection__panel {
+  isolation: isolate;
+  color-scheme: light;
+  border: 3px solid transparent;
+  border-radius: clamp(1rem, 2vw, 1.5rem);
+  background:
+    radial-gradient(circle at 82% 16%, rgb(0 176 244 / 8%), transparent 27%) padding-box,
+    radial-gradient(circle at 14% 84%, rgb(56 212 48 / 7%), transparent 28%) padding-box,
+    linear-gradient(#f5f2eb, #f5f2eb) padding-box,
+    conic-gradient(
+      from var(--contact-glow-angle),
+      transparent 0deg,
+      transparent 34deg,
+      #ff0109 78deg,
+      #00b0f4 120deg,
+      #38d430 162deg,
+      transparent 216deg,
+      transparent 360deg
+    ) border-box;
+  box-shadow: 0 3rem 8rem rgb(0 0 0 / 42%);
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  will-change: transform;
+  animation:
+    availability-dialog-in .42s cubic-bezier(.2, .8, .2, 1) both,
+    contact-glow-rotate 4.8s linear infinite;
+}
+
+.availability-selection--contact-theme .availability-selection__panel::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.availability-selection--contact-theme .availability-selection__panel::after {
+  z-index: 0;
+  inset: 0;
+  opacity: .34;
+  background-image: radial-gradient(rgb(9 11 13 / 16%) .6px, transparent .6px);
+  background-size: 7px 7px;
+  mask-image: linear-gradient(115deg, #000, transparent 42%);
+}
+
+.availability-selection--contact-theme .availability-selection__brand,
+.availability-selection--contact-theme .availability-selection__panel > p,
+.availability-selection--contact-theme .availability-selection__panel h2,
+.availability-selection--contact-theme .availability-selection__items,
+.availability-selection--contact-theme .availability-selection__panel label,
+.availability-selection--contact-theme .availability-selection__actions {
+  position: relative;
+  z-index: 1;
+}
+
+.availability-selection--contact-theme .availability-selection__close {
+  border-color: rgb(9 11 13 / 18%);
+  background: rgb(245 242 235 / 78%);
+  color: #090b0d;
+}
+
+.availability-selection--contact-theme .availability-selection__brand {
+  color: #090b0d;
+}
+
+.availability-selection--contact-theme .availability-selection__panel > p:first-of-type,
+.availability-selection--contact-theme .availability-selection__items small,
+.availability-selection--contact-theme .availability-selection__items > p {
+  color: rgb(9 11 13 / 54%);
+}
+
+.availability-selection--contact-theme .availability-selection__items,
+.availability-selection--contact-theme .availability-selection__items > div {
+  border-color: rgb(9 11 13 / 18%);
+}
+
+.availability-selection--contact-theme .availability-selection__items > div > button {
+  color: rgb(9 11 13 / 58%);
+}
+
+.availability-selection--contact-theme .availability-selection__panel label {
+  color: rgb(9 11 13 / 62%);
+}
+
+.availability-selection--contact-theme .availability-selection__panel input,
+.availability-selection--contact-theme .availability-selection__panel textarea {
+  border-color: rgb(9 11 13 / 20%);
+  color: #090b0d;
+  caret-color: #090b0d;
+}
+
+.availability-selection--contact-theme .availability-selection__panel input::placeholder,
+.availability-selection--contact-theme .availability-selection__panel textarea::placeholder {
+  color: rgb(9 11 13 / 38%);
+}
+
+.availability-selection--contact-theme .availability-selection__panel input:focus,
+.availability-selection--contact-theme .availability-selection__panel textarea:focus {
+  border-color: #090b0d;
+}
+
+.availability-selection--contact-theme .availability-selection__panel input:autofill,
+.availability-selection--contact-theme .availability-selection__panel textarea:autofill {
+  background: #f5f2eb;
+  color: #090b0d;
+}
+
+.availability-selection--contact-theme .availability-selection__panel input:-webkit-autofill,
+.availability-selection--contact-theme .availability-selection__panel input:-webkit-autofill:hover,
+.availability-selection--contact-theme .availability-selection__panel input:-webkit-autofill:focus,
+.availability-selection--contact-theme .availability-selection__panel textarea:-webkit-autofill,
+.availability-selection--contact-theme .availability-selection__panel textarea:-webkit-autofill:hover,
+.availability-selection--contact-theme .availability-selection__panel textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #090b0d;
+  caret-color: #090b0d;
+  -webkit-box-shadow: 0 0 0 1000px #f5f2eb inset;
+  box-shadow: 0 0 0 1000px #f5f2eb inset;
+}
+
+.availability-selection--contact-theme .availability-selection__actions a,
+.availability-selection--contact-theme .availability-selection__actions button {
+  border-color: rgb(9 11 13 / 24%);
+  color: #090b0d;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .availability-catalog-modal__close:hover,
   .availability-catalog-modal__selection-trigger:hover,
@@ -676,6 +829,14 @@
   .availability-catalog-card__image:hover img {
     filter: brightness(1.08);
     transform: scale(1.035);
+  }
+
+  .availability-selection--contact-theme .availability-selection__close:hover,
+  .availability-selection--contact-theme .availability-selection__actions a:hover,
+  .availability-selection--contact-theme .availability-selection__actions button:hover {
+    border-color: #090b0d;
+    background: #090b0d;
+    color: #f5f2eb;
   }
 }
 
@@ -774,6 +935,15 @@
   .availability-selection__panel {
     width: 100%;
     max-height: 98%;
+  }
+
+  .availability-selection__motion {
+    width: 100%;
+    max-height: 98dvh;
+  }
+
+  .availability-selection__motion > .availability-selection__panel {
+    max-height: 98dvh;
   }
 
   .availability-selection__panel {
