@@ -830,6 +830,27 @@
 }
 
 @media (max-width: 900px) {
+  /*
+   * Keep the mobile scroll geometry tied to Safari's stable viewport. Using
+   * dvh here makes both sections resize while the browser chrome expands or
+   * collapses, which causes a visible jump at their shared boundary.
+   */
+  .availability-page,
+  .availability-page__shell,
+  .availability-page__intro,
+  .availability-explorer {
+    min-height: 100svh;
+  }
+
+  .availability-page::after {
+    content: none;
+  }
+
+  .availability-page__intro,
+  .availability-explorer__story {
+    contain: paint;
+  }
+
   .availability-page__orb {
     position: absolute;
     width: clamp(20rem, 72vw, 30rem);
@@ -907,6 +928,7 @@
   .availability-explorer {
     --availability-image-height: clamp(14rem, 48vw, 25rem);
 
+    height: auto;
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: max-content;
     align-content: start;
@@ -1029,6 +1051,8 @@
     scroll-snap-align: center;
     scroll-snap-stop: always;
     user-select: none;
+    content-visibility: auto;
+    contain-intrinsic-size: calc(100vw - var(--availability-carousel-peek)) var(--availability-image-height);
   }
 
   .availability-explorer__carousel-dots {

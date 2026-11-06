@@ -458,22 +458,6 @@ export function AvailabilityPage({
   }, [availableLocations])
 
   useEffect(() => {
-    if (!window.matchMedia('(max-width: 900px)').matches) return
-
-    const nearbyItems = [
-      explorerItems[activeIndex - 1],
-      explorerItems[activeIndex],
-      explorerItems[activeIndex + 1],
-      explorerItems[activeIndex + 2],
-    ].filter((item): item is (typeof explorerItems)[number] => Boolean(item))
-
-    nearbyItems.forEach((item) => {
-      const image = new Image()
-      image.src = item.image
-    })
-  }, [activeIndex, explorerItems])
-
-  useEffect(() => {
     const navigateWithKeyboard = (event: KeyboardEvent) => {
       if (mediaType !== 'fijo') return
 
@@ -1028,7 +1012,8 @@ export function AvailabilityPage({
                     src={item.image}
                     alt={item.imageAlt}
                     draggable={false}
-                    loading={index < 2 ? 'eager' : 'lazy'}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'low'}
                     decoding="async"
                   />
                   <div className="availability-explorer__image-shade" aria-hidden="true" />
