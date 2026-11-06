@@ -388,8 +388,8 @@ export function SiteNavigation({
             aria-hidden={!mediaOpen}
           >
             {mediaLinks.map(({ id, label }) => (
-              <a
-                href={`${onHomePage ? '' : '/'}#${id}-gallery`}
+              <Link
+                to={`/#${id}-gallery`}
                 tabIndex={revealed && !temporarilyHidden && mediaOpen ? 0 : -1}
                 onClick={(event) => {
                   setMenuOpen(false)
@@ -400,7 +400,7 @@ export function SiteNavigation({
               >
                 <span aria-hidden="true" />
                 {label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>

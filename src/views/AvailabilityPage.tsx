@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react'
 import Lenis from 'lenis'
 import { useSearchParams } from 'react-router-dom'
 import { gsap, ScrollTrigger, useGSAP } from '../animation/gsap'
@@ -22,6 +29,17 @@ interface AvailabilityPageProps {
 type MediaType = 'fijo' | 'digital'
 type ExplorerView = 'locations' | 'categories'
 
+function mobileCarouselLeft(carousel: HTMLDivElement, index: number) {
+  const slides = carousel.querySelectorAll<HTMLElement>(
+    '.availability-explorer__image-slide',
+  )
+  const slide = slides[index]
+  if (!slide) return 0
+
+  const centeredLeft = slide.offsetLeft - (carousel.clientWidth - slide.offsetWidth) / 2
+  return Math.max(0, Math.min(carousel.scrollWidth - carousel.clientWidth, centeredLeft))
+}
+
 export function AvailabilityPage({
   catalog,
   onContact,
@@ -36,6 +54,7 @@ export function AvailabilityPage({
   const direction = useRef(1)
   const mobileCarousel = useRef<HTMLDivElement>(null)
   const carouselFrame = useRef<number | null>(null)
+  const mobileCarouselTarget = useRef<number | null>(null)
   const hasRenderedLocation = useRef(false)
   const activeIndexRef = useRef(0)
   const scrollTarget = useRef<number | null>(null)
@@ -166,6 +185,31 @@ export function AvailabilityPage({
     setSearchParams(next)
   }
 
+  const openInventoryMedium = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    locationId: string,
+    spaceId: string,
+  ) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const key = `locations:${locationId}`
+    const next = new URLSearchParams(searchParams)
+
+    next.set('catalog', 'location')
+    next.set('location', locationId)
+    next.set('space', spaceId)
+    next.delete('type')
+    setCatalogOrigin({
+      key,
+      origin: {
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+      },
+    })
+    setSearchParams(next)
+  }
+
   const closeCatalogModal = useCallback(() => {
     const next = new URLSearchParams(searchParams)
     next.delete('catalog')
@@ -216,11 +260,29 @@ export function AvailabilityPage({
     })
   }, [mediaType])
 
+  const scrollToExplorer = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    const target = explorerStory.current
+    if (!target) return
+
+    window.history.replaceState(window.history.state, '', '#explorar')
+    if (!prefersReducedMotion() && lenis.current) {
+      lenis.current.scrollTo(target, {
+        duration: 1.05,
+        easing: (progress) => 1 - Math.pow(1 - progress, 4),
+      })
+      return
+    }
+
+    target.scrollIntoView({ behavior: 'auto', block: 'start' })
+  }, [])
+
   const selectExplorerView = useCallback((nextView: ExplorerView) => {
     if (nextView === explorerView) return
 
     activeIndexRef.current = 0
     scrollTarget.current = null
+    mobileCarouselTarget.current = null
     setActiveIndex(0)
     setExplorerView(nextView)
 
@@ -245,7 +307,7 @@ export function AvailabilityPage({
 
     if (
       !prefersReducedMotion() &&
-      !window.matchMedia('(max-width: 620px)').matches
+      !window.matchMedia('(max-width: 900px)').matches
     ) {
       previousButtonTops.current = locationButtons.current.map(
         (button) => button?.getBoundingClientRect().top ?? 0,
@@ -277,18 +339,35 @@ export function AvailabilityPage({
         return
       }
 
-      const nextIndex = Math.max(
-        0,
-        Math.min(
-          explorerItems.length - 1,
-          Math.round(carousel.scrollLeft / slideWidth),
-        ),
+      const programmaticTarget = mobileCarouselTarget.current
+      if (programmaticTarget !== null) {
+        const targetLeft = mobileCarouselLeft(carousel, programmaticTarget)
+        const arrivalThreshold = Math.max(2, slideWidth * .01)
+        if (Math.abs(carousel.scrollLeft - targetLeft) <= arrivalThreshold) {
+          mobileCarouselTarget.current = null
+        }
+        carouselFrame.current = null
+        return
+      }
+
+      const carouselCenter = carousel.scrollLeft + slideWidth / 2
+      const slides = Array.from(
+        carousel.querySelectorAll<HTMLElement>('.availability-explorer__image-slide'),
       )
+      const nextIndex = slides.reduce((closestIndex, slide, index) => {
+        const slideCenter = slide.offsetLeft + slide.offsetWidth / 2
+        const closest = slides[closestIndex]
+        const closestCenter = closest.offsetLeft + closest.offsetWidth / 2
+        return Math.abs(slideCenter - carouselCenter)
+          < Math.abs(closestCenter - carouselCenter)
+          ? index
+          : closestIndex
+      }, 0)
 
       carouselFrame.current = null
       activateExplorerItem(nextIndex)
     })
-  }, [activateExplorerItem, explorerItems.length])
+  }, [activateExplorerItem])
 
   useEffect(() => () => {
     if (carouselFrame.current !== null) {
@@ -304,10 +383,15 @@ export function AvailabilityPage({
       )
 
       if (window.matchMedia('(max-width: 900px)').matches) {
+        if (carouselFrame.current !== null) {
+          cancelAnimationFrame(carouselFrame.current)
+          carouselFrame.current = null
+        }
+        mobileCarouselTarget.current = boundedIndex
         activateExplorerItem(boundedIndex)
         const carousel = mobileCarousel.current
         carousel?.scrollTo({
-          left: (carousel?.clientWidth ?? 0) * boundedIndex,
+          left: carousel ? mobileCarouselLeft(carousel, boundedIndex) : 0,
           behavior: prefersReducedMotion() ? 'auto' : 'smooth',
         })
         return
@@ -348,8 +432,12 @@ export function AvailabilityPage({
   )
 
   useEffect(() => {
+    // Catalog refreshes can arrive after the user starts scrolling, so this
+    // reset must remain independent from the image-preload dependencies.
     window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
 
+  useEffect(() => {
     if (window.matchMedia('(max-width: 900px)').matches) return
 
     availableLocations.forEach((location) => {
@@ -362,6 +450,22 @@ export function AvailabilityPage({
       image.src = category.image
     })
   }, [availableLocations])
+
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 900px)').matches) return
+
+    const nearbyItems = [
+      explorerItems[activeIndex - 1],
+      explorerItems[activeIndex],
+      explorerItems[activeIndex + 1],
+      explorerItems[activeIndex + 2],
+    ].filter((item): item is (typeof explorerItems)[number] => Boolean(item))
+
+    nearbyItems.forEach((item) => {
+      const image = new Image()
+      image.src = item.image
+    })
+  }, [activeIndex, explorerItems])
 
   useEffect(() => {
     const navigateWithKeyboard = (event: KeyboardEvent) => {
@@ -420,7 +524,7 @@ export function AvailabilityPage({
       const media = gsap.matchMedia()
 
       media.add(
-        '(min-width: 621px) and (prefers-reduced-motion: no-preference)',
+        '(min-width: 901px) and (prefers-reduced-motion: no-preference)',
         () => {
           const orbs = gsap.utils.toArray<HTMLElement>('.availability-page__orb')
           const paths = [
@@ -500,10 +604,6 @@ export function AvailabilityPage({
         const smoothScroll = new Lenis({
           autoRaf: false,
           autoToggle: true,
-          anchors: {
-            duration: 1.05,
-            easing: (progress) => 1 - Math.pow(1 - progress, 4),
-          },
           duration: 1.08,
           easing: (progress) => Math.min(1, 1.001 - Math.pow(2, -10 * progress)),
           smoothWheel: true,
@@ -579,7 +679,7 @@ export function AvailabilityPage({
     () => {
       if (
         prefersReducedMotion() ||
-        window.matchMedia('(max-width: 620px)').matches
+        window.matchMedia('(max-width: 900px)').matches
       ) return
 
       const timeline = gsap
@@ -743,7 +843,11 @@ export function AvailabilityPage({
               <span>Espacios reales.</span>
               <span>Posibilidades extraordinarias.</span>
             </p>
-            <a className="availability-page__explore" href="#explorar">
+            <a
+              className="availability-page__explore"
+              href="#explorar"
+              onClick={scrollToExplorer}
+            >
               <span>Explorar medios</span>
               <span aria-hidden="true">↓</span>
             </a>
@@ -897,6 +1001,9 @@ export function AvailabilityPage({
             <div
               className="availability-explorer__image-carousel"
               ref={mobileCarousel}
+              onPointerDown={() => {
+                mobileCarouselTarget.current = null
+              }}
               onScroll={(event) => syncNativeCarousel(event.currentTarget)}
               aria-label={
                 explorerView === 'locations'
@@ -926,6 +1033,19 @@ export function AvailabilityPage({
                     {String(index + 1).padStart(2, '0')} — {item.name}
                   </p>
                 </div>
+              ))}
+            </div>
+
+            <div className="availability-explorer__carousel-dots" aria-label="Seleccionar tarjeta">
+              {explorerItems.map((item, index) => (
+                <button
+                  className={index === activeIndex ? 'is-active' : undefined}
+                  type="button"
+                  aria-label={`Ver ${item.name}`}
+                  aria-current={index === activeIndex ? 'true' : undefined}
+                  onClick={() => goToExplorerItem(index)}
+                  key={item.id}
+                />
               ))}
             </div>
 
@@ -983,16 +1103,36 @@ export function AvailabilityPage({
                   className="availability-explorer__medium"
                   key={`${medium.locationId}-${medium.name}`}
                 >
-                  <span className="availability-explorer__status" aria-hidden="true" />
-                  <div className="availability-explorer__medium-copy">
-                    <p>{medium.name}</p>
-                    {explorerView === 'categories' && (
-                      <span>{medium.locationName}</span>
+                  <button
+                    className="availability-explorer__medium-open"
+                    type="button"
+                    aria-label={`Abrir ${medium.name} en ${medium.locationName}`}
+                    onClick={(event) => openInventoryMedium(
+                      event,
+                      medium.locationId,
+                      medium.id,
                     )}
-                  </div>
-                  <strong aria-label={`${medium.available} disponibles`}>
-                    {medium.available}
-                  </strong>
+                  >
+                    <span
+                      className={`availability-explorer__status${
+                        medium.available <= 0
+                          ? ' is-unavailable'
+                          : medium.available <= 3
+                            ? ' is-low'
+                            : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <div className="availability-explorer__medium-copy">
+                      <p>{medium.name}</p>
+                      {explorerView === 'categories' && (
+                        <span>{medium.locationName}</span>
+                      )}
+                    </div>
+                    <strong aria-label={`${medium.available} disponibles`}>
+                      {medium.available}
+                    </strong>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -1024,10 +1164,10 @@ export function AvailabilityPage({
             role="tabpanel"
             aria-labelledby="availability-tab-digital"
           >
-            <h2>Tu marca, donde está tu audiencia.</h2>
+            <h2>Cotiza tu campaña en pantallas digitales.</h2>
             <p className="availability-explorer__digital-copy">
-              Conecta con nuestro equipo de ventas para conocer formatos,
-              audiencias y los reportes que harán crecer tu campaña.
+              Contacta a nuestro equipo de ventas para conocer formatos,
+              ubicaciones y disponibilidad para tu campaña.
             </p>
             <button
               className="availability-explorer__digital-contact"
@@ -1049,6 +1189,7 @@ export function AvailabilityPage({
     </div>
     {catalogModal && (
       <AvailabilityCatalogModal
+        key={`${catalogModal.view}:${catalogModal.itemId}`}
         catalog={catalog}
         context={catalogModal}
         detailKey={detailKey}

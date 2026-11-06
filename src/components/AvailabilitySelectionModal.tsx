@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import butterflyAsset from '../assets/public-butterfly.svg'
 import { gsap, useGSAP } from '../animation/gsap'
@@ -10,6 +10,7 @@ import type {
 } from '../data/availability'
 import { assetUrl } from '../lib/assetUrl'
 import { downloadQuotePdf } from '../lib/createQuotePdf'
+import { WhatsAppContactChooser } from './WhatsAppContactChooser'
 
 const butterfly = assetUrl(butterflyAsset)
 
@@ -19,6 +20,7 @@ interface AvailabilitySelectionModalProps {
   customerName: string
   campaignIdea: string
   onClose: () => void
+  onExploreCatalog: () => void
   onSelectedKeysChange: (next: Set<string>) => void
   onCustomerNameChange: (next: string) => void
   onCampaignIdeaChange: (next: string) => void
@@ -53,12 +55,15 @@ export function AvailabilitySelectionModal({
   customerName,
   campaignIdea,
   onClose,
+  onExploreCatalog,
   onSelectedKeysChange,
   onCustomerNameChange,
   onCampaignIdeaChange,
 }: AvailabilitySelectionModalProps) {
   const closeButton = useRef<HTMLButtonElement>(null)
   const motion = useRef<HTMLDivElement>(null)
+  const whatsappPanel = useRef<HTMLDivElement>(null)
+  const [whatsappOpen, setWhatsappOpen] = useState(false)
   const selectedEntries = useMemo(
     () => catalog.locations.flatMap((location) =>
       location.spaces
@@ -90,7 +95,9 @@ export function AvailabilitySelectionModal({
     closeButton.current?.focus({ preventScroll: true })
 
     const closeWithEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key !== 'Escape') return
+      if (whatsappOpen) setWhatsappOpen(false)
+      else onClose()
     }
     window.addEventListener('keydown', closeWithEscape)
 
@@ -99,7 +106,12 @@ export function AvailabilitySelectionModal({
       window.removeEventListener('keydown', closeWithEscape)
       previousFocus?.focus({ preventScroll: true })
     }
-  }, [onClose])
+  }, [onClose, whatsappOpen])
+
+  useEffect(() => {
+    if (!whatsappOpen) return
+    whatsappPanel.current?.querySelector<HTMLElement>('a')?.focus({ preventScroll: true })
+  }, [whatsappOpen])
 
   useGSAP((_, contextSafe) => {
     const element = motion.current
@@ -207,7 +219,18 @@ export function AvailabilitySelectionModal({
                 <button type="button" onClick={() => removeSelection(entry)}>Quitar</button>
               </div>
             )) : (
-              <p>Aún no has agregado medios. Cierra esta ventana y explora el catálogo.</p>
+              <p>
+                Aún no has agregado medios.{' '}
+                <a
+                  href="/disponibilidad#explorar"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    onExploreCatalog()
+                  }}
+                >
+                 Explora nuestro catálogo.
+                </a>
+              </p>
             )}
           </div>
           <label>
@@ -236,22 +259,33 @@ export function AvailabilitySelectionModal({
               className={selectedEntries.length ? undefined : 'is-disabled'}
               href={selectedEntries.length ? `mailto:marketing@publicsv.net?subject=${encodeURIComponent('Consulta de disponibilidad PUBLIC')}&body=${encodeURIComponent(requestCopy)}` : undefined}
               aria-disabled={!selectedEntries.length}
+              aria-label="Enviar correo"
             >
-              Enviar correo
-            </a>
-            <a
-              className={selectedEntries.length ? undefined : 'is-disabled'}
-              href={selectedEntries.length ? `https://wa.me/50378400641?text=${encodeURIComponent(requestCopy)}` : undefined}
-              target="_blank"
-              rel="noreferrer"
-              aria-disabled={!selectedEntries.length}
-            >
-              Escribir por WhatsApp
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+                <path d="m5 7 7 5 7-5" />
+              </svg>
+              <span>Enviar correo</span>
             </a>
             <button
               className={selectedEntries.length ? undefined : 'is-disabled'}
               type="button"
               disabled={!selectedEntries.length}
+              onClick={() => setWhatsappOpen(true)}
+              aria-disabled={!selectedEntries.length}
+              aria-label="Escribir por WhatsApp"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 11.6a8 8 0 0 1-11.8 7L4 20l1.4-4A8 8 0 1 1 20 11.6Z" />
+                <path d="M8.7 8.1c.5 2.5 2.5 4.5 5 5l1-1.1 2 .9c-.3 1.2-1.3 2-2.5 2-3.5-.2-6.6-3.2-6.8-6.8 0-1.2.8-2.2 2-2.5l.9 2-1.6.5Z" />
+              </svg>
+              <span>Escribir por WhatsApp</span>
+            </button>
+            <button
+              className={selectedEntries.length ? undefined : 'is-disabled'}
+              type="button"
+              disabled={!selectedEntries.length}
+              aria-label="Generar PDF"
               onClick={() => downloadQuotePdf({
                 customerName,
                 campaignIdea,
@@ -264,11 +298,24 @@ export function AvailabilitySelectionModal({
                 })),
               })}
             >
-              Generar PDF
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 3.5h8l4 4v13H6Z" />
+                <path d="M14 3.5v4h4M8.5 16.5h7M8.5 13h7" />
+              </svg>
+              <span>Generar PDF</span>
             </button>
           </div>
         </section>
       </div>
+      {whatsappOpen && (
+        <WhatsAppContactChooser
+          message={requestCopy}
+          onClose={() => setWhatsappOpen(false)}
+          panelRef={whatsappPanel}
+          titleId="availability-selection-whatsapp-title"
+          viewportSheet
+        />
+      )}
     </div>,
     document.body,
   )

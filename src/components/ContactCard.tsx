@@ -17,6 +17,7 @@ import butterflyLogoAsset from '../assets/public-butterfly.svg'
 import whatsappIconAsset from '../assets/whatsapp-streamline.svg'
 import { assetUrl } from '../lib/assetUrl'
 import { isSafari } from '../platform/iosSafari'
+import { WhatsAppContactChooser } from './WhatsAppContactChooser'
 
 const facebookIcon = assetUrl(facebookIconAsset)
 const instagramIcon = assetUrl(instagramIconAsset)
@@ -121,12 +122,6 @@ function getOfficeMapTarget() {
     actionLabel: 'Abrir la oficina en Google Maps',
   }
 }
-
-const whatsappContacts = [
-  { name: 'Iris Quinteros', number: '+503 7840 0641', whatsapp: '50378400641' },
-  { name: 'Zayda Reyes', number: '+503 7607 9725', whatsapp: '50376079725' },
-  { name: 'Rosemary Daboub', number: '+503 7855 7192', whatsapp: '50378557192' },
-]
 
 const socialLinks = [
   { id: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/publicoutdoors/' },
@@ -924,60 +919,12 @@ export function ContactCard({
     : 'purpose-contact-card-title'
 
   const whatsappChooser = whatsappOpen ? (
-    <div
-      className={`contact-card__whatsapp-panel${useWhatsappSheet ? ' is-viewport-sheet' : ''}`}
-      ref={whatsappPanel}
-      data-export-exclude="true"
-      onClick={() => setWhatsappOpen(false)}
-    >
-      <div
-        className="contact-card__whatsapp-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="contact-card-whatsapp-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="contact-card__whatsapp-header">
-          <div>
-            <span>WhatsApp</span>
-            <strong id="contact-card-whatsapp-title">¿Con quién deseas hablar?</strong>
-          </div>
-          <button
-            type="button"
-            onClick={() => setWhatsappOpen(false)}
-            aria-label="Cerrar contactos de WhatsApp"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
-        </header>
-
-        <div className="contact-card__whatsapp-list">
-          {whatsappContacts.map((contact) => (
-            <a
-              href={`https://wa.me/${contact.whatsapp}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => setWhatsappOpen(false)}
-              key={contact.whatsapp}
-              aria-label={`Abrir WhatsApp con ${contact.name}, ${contact.number}`}
-            >
-              <span className="contact-card__whatsapp-avatar" aria-hidden="true">
-                {contact.name.charAt(0)}
-              </span>
-              <span>
-                <strong>{contact.name}</strong>
-                <small>{contact.number}</small>
-              </span>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 12h8M13 8l4 4-4 4" />
-              </svg>
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
+    <WhatsAppContactChooser
+      onClose={() => setWhatsappOpen(false)}
+      panelRef={whatsappPanel}
+      titleId="contact-card-whatsapp-title"
+      viewportSheet={useWhatsappSheet}
+    />
   ) : null
 
   const cardContent = (

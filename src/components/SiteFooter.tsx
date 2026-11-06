@@ -1,13 +1,10 @@
 import butterflyLogoAsset from '../assets/public-butterfly.svg'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { assetUrl } from '../lib/assetUrl'
 
 const butterflyLogo = assetUrl(butterflyLogoAsset)
 
 export function SiteFooter({ onContact }: { onContact: () => void }) {
-  const location = useLocation()
-  const homePrefix = location.pathname === '/' ? '' : '/'
-
   return (
     <footer className="site-footer">
       <div className="site-footer__inner">
@@ -17,20 +14,10 @@ export function SiteFooter({ onContact }: { onContact: () => void }) {
           <span className="site-footer__location">El Salvador</span>
         </div>
         <nav className="site-footer__links" aria-label="Enlaces del pie de página">
-          <a
-            href={`${homePrefix}#hero`}
-            onClick={() => window.dispatchEvent(new Event('public:navigate-home'))}
-          >
-            Inicio
-          </a>
-          <a
-            href={`${homePrefix}#indoor-gallery`}
-            onClick={() => window.dispatchEvent(new Event('public:navigate-to-media'))}
-          >
-            Medios
-          </a>
-          <a href={`${homePrefix}#team`}>Equipo</a>
-          <a href={`${homePrefix}#history`}>Historia</a>
+          <Link to="/#hero">Inicio</Link>
+          <Link to="/#medios">Medios</Link>
+          <Link to="/#team">Equipo</Link>
+          <Link to="/#history">Historia</Link>
           <Link to="/disponibilidad">Disponibilidad</Link>
           <button type="button" onClick={onContact} aria-haspopup="dialog">
             Contacto

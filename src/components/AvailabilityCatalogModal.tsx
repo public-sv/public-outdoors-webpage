@@ -39,6 +39,8 @@ interface CatalogEntry {
   space: AvailabilitySpace
 }
 
+type QuantityFilter = 'all' | 'one-to-two' | 'three-to-ten' | 'eleven-plus'
+
 const formatPrice = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -59,6 +61,20 @@ function availabilityTone(value: number) {
   return undefined
 }
 
+function normalizeSearchValue(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+}
+
+function matchesQuantity(available: number, filter: QuantityFilter) {
+  if (filter === 'one-to-two') return available >= 1 && available <= 2
+  if (filter === 'three-to-ten') return available >= 3 && available <= 10
+  if (filter === 'eleven-plus') return available >= 11
+  return true
+}
+
 export function AvailabilityCatalogModal({
   catalog,
   context,
@@ -70,10 +86,19 @@ export function AvailabilityCatalogModal({
   onSelectedKeysChange,
 }: AvailabilityCatalogModalProps) {
   const panel = useRef<HTMLElement>(null)
+  const detailMotion = useRef<HTMLDivElement>(null)
   const closeButton = useRef<HTMLButtonElement>(null)
   const selectionFlight = useRef<HTMLDivElement | null>(null)
   const shareFeedbackTimer = useRef<number | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [priceRange, setPriceRange] = useState<[number | null, number | null]>([
+    null,
+    null,
+  ])
+  const [quantityFilter, setQuantityFilter] = useState<QuantityFilter>('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [collapsedDetailKey, setCollapsedDetailKey] = useState<string | null>(null)
 
   const category = availableMediaCategories.find(
     (item) => item.id === context.itemId,
@@ -95,13 +120,82 @@ export function AvailabilityCatalogModal({
         .map((space) => ({ location: catalogLocation, space })),
     )
   }, [catalog.locations, context.itemId, context.view])
+  const categoryOptions = useMemo(() => {
+    if (context.view === 'locations') {
+      const availableCategoryIds = new Set(entries.map((entry) => entry.space.category))
+      return availableMediaCategories
+        .filter((item) => availableCategoryIds.has(item.id))
+        .map((item) => ({ value: item.id, label: item.name }))
+    }
+
+    return Array.from(
+      new Map(entries.map((entry) => [
+        entry.location.id,
+        entry.location.name,
+      ])).entries(),
+    )
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'))
+  }, [context.view, entries])
+  const priceBounds = useMemo(() => {
+    const prices = entries.map((entry) => entry.space.price)
+    const catalogMin = prices.length ? Math.min(...prices) : 0
+    const catalogMax = prices.length ? Math.max(...prices) : 50
+    const min = Math.floor(catalogMin / 50) * 50
+    const roundedMax = Math.ceil(catalogMax / 50) * 50
+
+    return {
+      min,
+      max: roundedMax > min ? roundedMax : min + 50,
+    }
+  }, [entries])
+  const priceStep = 50
+  const minPrice = priceRange[0] ?? priceBounds.min
+  const maxPrice = priceRange[1] ?? priceBounds.max
+  const priceSpan = priceBounds.max - priceBounds.min
+  const minPricePercent = (minPrice - priceBounds.min) / priceSpan * 100
+  const maxPricePercent = (maxPrice - priceBounds.min) / priceSpan * 100
+  const filteredEntries = useMemo(() => {
+    const normalizedSearch = normalizeSearchValue(searchTerm.trim())
+
+    return entries.filter((entry) => {
+      const entryCategory = context.view === 'locations'
+        ? entry.space.category
+        : entry.location.id
+      const matchesSearch = !normalizedSearch || [
+        entry.space.name,
+        entry.space.description,
+        entry.location.name,
+        entry.location.city,
+      ].some((value) => normalizeSearchValue(value).includes(normalizedSearch))
+
+      return matchesSearch
+        && entry.space.price >= minPrice
+        && entry.space.price <= maxPrice
+        && matchesQuantity(entry.space.available, quantityFilter)
+        && (categoryFilter === 'all' || entryCategory === categoryFilter)
+    })
+  }, [categoryFilter, context.view, entries, maxPrice, minPrice, quantityFilter, searchTerm])
   const activeEntry = entries.find((entry) => entryKey(entry) === detailKey) ?? null
+  const detailInfoCollapsed = detailKey !== null && collapsedDetailKey === detailKey
   const title = context.view === 'locations'
     ? location?.name ?? 'Disponibilidad'
     : `Medios ${category?.name ?? ''}`
   const description = context.view === 'locations'
     ? location?.description ?? ''
     : `Explora los espacios ${category?.name.toLocaleLowerCase('es') ?? ''} disponibles en nuestras ubicaciones.`
+  const filtersActive = searchTerm.trim() !== ''
+    || minPrice !== priceBounds.min
+    || maxPrice !== priceBounds.max
+    || quantityFilter !== 'all'
+    || categoryFilter !== 'all'
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setPriceRange([null, null])
+    setQuantityFilter('all')
+    setCategoryFilter('all')
+  }
 
   const toggleSelection = (entry: CatalogEntry) => {
     const key = entryKey(entry)
@@ -128,6 +222,7 @@ export function AvailabilityCatalogModal({
       if (event.key !== 'Escape') return
       if (document.querySelector('.availability-selection')) return
       if (detailKey) {
+        setCollapsedDetailKey(null)
         onDetailChange(null)
         return
       }
@@ -144,6 +239,17 @@ export function AvailabilityCatalogModal({
     if (shareFeedbackTimer.current !== null) {
       window.clearTimeout(shareFeedbackTimer.current)
     }
+  }, [])
+
+  useEffect(() => {
+    const mobileLayout = window.matchMedia('(max-width: 800px)')
+    const revealMobileInformation = () => {
+      if (mobileLayout.matches) setCollapsedDetailKey(null)
+    }
+
+    revealMobileInformation()
+    mobileLayout.addEventListener('change', revealMobileInformation)
+    return () => mobileLayout.removeEventListener('change', revealMobileInformation)
   }, [])
 
   const { contextSafe } = useGSAP(
@@ -197,6 +303,78 @@ export function AvailabilityCatalogModal({
     { dependencies: [context.itemId, context.origin, context.view] },
   )
 
+  useGSAP((_, tiltContextSafe) => {
+    const element = detailMotion.current
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const mobileLayout = window.matchMedia('(max-width: 800px)')
+    if (
+      !element
+      || !activeEntry
+      || !finePointer.matches
+      || mobileLayout.matches
+      || prefersReducedMotion()
+    ) return
+
+    const safe = tiltContextSafe!
+    const rotateX = gsap.quickTo(element, 'rotationX', {
+      duration: .55,
+      ease: 'power2.out',
+    })
+    const rotateY = gsap.quickTo(element, 'rotationY', {
+      duration: .55,
+      ease: 'power2.out',
+    })
+    const shiftX = gsap.quickTo(element, 'x', {
+      duration: .6,
+      ease: 'power2.out',
+    })
+    const shiftY = gsap.quickTo(element, 'y', {
+      duration: .6,
+      ease: 'power2.out',
+    })
+
+    gsap.set(element, {
+      transformPerspective: 1400,
+      transformOrigin: 'center center',
+      force3D: true,
+    })
+
+    const resetTilt = safe(() => {
+      rotateX(0)
+      rotateY(0)
+      shiftX(0)
+      shiftY(0)
+    })
+    const handlePointerMove = safe((event: PointerEvent) => {
+      if (event.pointerType === 'touch' || mobileLayout.matches) return
+
+      const horizontal = (event.clientX / window.innerWidth - .5) * 2
+      const vertical = (event.clientY / window.innerHeight - .5) * 2
+
+      rotateX(vertical * -2.25)
+      rotateY(horizontal * 3.2)
+      shiftX(horizontal * 2)
+      shiftY(vertical * 1.25)
+    })
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    window.addEventListener('blur', resetTilt)
+    mobileLayout.addEventListener('change', resetTilt)
+    document.documentElement.addEventListener('pointerleave', resetTilt)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('blur', resetTilt)
+      mobileLayout.removeEventListener('change', resetTilt)
+      document.documentElement.removeEventListener('pointerleave', resetTilt)
+      gsap.killTweensOf(element, ['rotationX', 'rotationY', 'x', 'y'])
+    }
+  }, {
+    dependencies: [detailKey],
+    scope: detailMotion,
+    revertOnUpdate: true,
+  })
+
   const addToSelection = (entry: CatalogEntry) => {
     contextSafe(() => {
       const source = document.querySelector<HTMLImageElement>(
@@ -207,6 +385,7 @@ export function AvailabilityCatalogModal({
       )
 
       toggleSelection(entry)
+      setCollapsedDetailKey(null)
       onDetailChange(null)
 
       if (prefersReducedMotion() || !source || !target) {
@@ -401,36 +580,172 @@ export function AvailabilityCatalogModal({
             <p>{description}</p>
           </header>
 
+          <section
+            className="availability-catalog-modal__filters"
+            aria-label="Filtros de disponibilidad"
+          >
+            <div className="availability-catalog-modal__filter-grid">
+              <label className="availability-catalog-modal__filter-pill availability-catalog-modal__search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m15.5 15.5 4.5 4.5" />
+                </svg>
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Buscar medios"
+                  aria-label="Buscar por nombre, ubicación o formato"
+                />
+              </label>
+
+              <div className="availability-catalog-modal__filter-pill availability-catalog-modal__price-filter">
+                <div className="availability-catalog-modal__price-heading">
+                  <span>Precio</span>
+                  <output aria-live="polite">
+                    {formatPrice.format(minPrice)} — {formatPrice.format(maxPrice)}
+                  </output>
+                </div>
+                <div className="availability-catalog-modal__range">
+                  <span className="availability-catalog-modal__range-track" aria-hidden="true">
+                    <i
+                      style={{
+                        left: `${minPricePercent}%`,
+                        right: `${100 - maxPricePercent}%`,
+                      }}
+                    />
+                  </span>
+                  <input
+                    type="range"
+                    min={priceBounds.min}
+                    max={priceBounds.max}
+                    step={priceStep}
+                    value={minPrice}
+                    aria-label="Precio mínimo"
+                    onChange={(event) => {
+                      const nextValue = Math.min(
+                        Number(event.target.value),
+                        maxPrice - priceStep,
+                      )
+                      setPriceRange([nextValue, maxPrice])
+                    }}
+                  />
+                  <input
+                    type="range"
+                    min={priceBounds.min}
+                    max={priceBounds.max}
+                    step={priceStep}
+                    value={maxPrice}
+                    aria-label="Precio máximo"
+                    onChange={(event) => {
+                      const nextValue = Math.max(
+                        Number(event.target.value),
+                        minPrice + priceStep,
+                      )
+                      setPriceRange([minPrice, nextValue])
+                    }}
+                  />
+                </div>
+              </div>
+
+              <label className="availability-catalog-modal__filter-pill availability-catalog-modal__select-filter">
+                <span>Cantidad</span>
+                <select
+                  value={quantityFilter}
+                  onChange={(event) => setQuantityFilter(event.target.value as QuantityFilter)}
+                >
+                  <option value="all">Cualquier cantidad</option>
+                  <option value="one-to-two">1 — 2 disponibles</option>
+                  <option value="three-to-ten">3 — 10 disponibles</option>
+                  <option value="eleven-plus">11 o más disponibles</option>
+                </select>
+              </label>
+
+              <label className="availability-catalog-modal__filter-pill availability-catalog-modal__select-filter">
+                <span>
+                  {context.view === 'locations'
+                    ? 'Tipo'
+                    : 'Ubicación'}
+                </span>
+                <select
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
+                >
+                  <option value="all">
+                    {context.view === 'locations'
+                      ? 'Todos los tipos'
+                      : 'Todas las ubicaciones'}
+                  </option>
+                  {categoryOptions.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/*<p className="availability-catalog-modal__result-count" aria-live="polite">*/}
+              {/*  {filteredEntries.length} / {entries.length}*/}
+              {/*  <span> medios</span>*/}
+              {/*</p>*/}
+
+              {filtersActive && (
+                <button
+                  className="availability-catalog-modal__clear-filters"
+                  type="button"
+                  onClick={clearFilters}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </section>
+
           <div className="availability-catalog-modal__grid">
-            {entries.map((entry) => {
+            {filteredEntries.map((entry) => {
               const key = entryKey(entry)
+              const cardCategory = context.view === 'locations'
+                ? availableMediaCategories.find((item) => item.id === entry.space.category)?.name
+                : entry.location.name
               return (
                 <article className="availability-catalog-card" key={key}>
                   <button
-                    className="availability-catalog-card__image"
+                    className="availability-catalog-card__open"
                     type="button"
                     aria-label={`Ver ${entry.space.name}`}
-                    onClick={() => onDetailChange(key)}
-                  >
+                    onClick={() => {
+                      setCollapsedDetailKey(null)
+                      onDetailChange(key)
+                    }}
+                  />
+                  <div className="availability-catalog-card__image">
                     <img src={entry.space.image.url} alt={entry.space.image.alt} />
-                  </button>
+                  </div>
+                  <p className="availability-catalog-card__category">
+                    {cardCategory}
+                  </p>
                   <h3>{entry.space.name}</h3>
-                  <p>{entry.location.name}</p>
+                  <p>
+                    {context.view === 'locations'
+                      ? entry.location.name
+                      : entry.location.city}
+                  </p>
                   <div className="availability-catalog-card__meta">
                     <span><i className={availabilityTone(entry.space.available)} aria-hidden="true" />{availabilityLabel(entry.space.available)}</span>
                     <strong>{formatPrice.format(entry.space.price)} <small>/ {entry.space.price_label}</small></strong>
                   </div>
-                  <button
-                    className="availability-catalog-card__view"
-                    type="button"
-                    onClick={() => onDetailChange(key)}
-                  >
-                    Ver medio
-                  </button>
                 </article>
               )
             })}
           </div>
+
+          {filteredEntries.length === 0 && (
+            <div className="availability-catalog-modal__empty" role="status">
+              <h3>No encontramos medios con estos filtros.</h3>
+              <p>Prueba con otro rango o limpia la búsqueda para ver todo el inventario.</p>
+              <button type="button" onClick={clearFilters}>Ver todos los medios</button>
+            </div>
+          )}
 
           <div className="availability-catalog-modal__catalog-heading">
             <p>Disponibilidad sujeta a confirmación. Precios y cantidades según inventario.</p>
@@ -439,8 +754,17 @@ export function AvailabilityCatalogModal({
 
         {activeEntry && createPortal(
           <div className="availability-space-detail" role="dialog" aria-modal="true" aria-labelledby="availability-space-title">
-            <button className="availability-space-detail__backdrop" type="button" aria-label="Cerrar detalle" onClick={() => onDetailChange(null)} />
-            <section className="availability-space-detail__panel">
+            <button
+              className="availability-space-detail__backdrop"
+              type="button"
+              aria-label="Cerrar detalle"
+              onClick={() => {
+                setCollapsedDetailKey(null)
+                onDetailChange(null)
+              }}
+            />
+            <div className="availability-space-detail__motion" ref={detailMotion}>
+            <section className={`availability-space-detail__panel${detailInfoCollapsed ? ' is-info-collapsed' : ''}`}>
               <button
                 className="availability-space-detail__share"
                 type="button"
@@ -451,11 +775,42 @@ export function AvailabilityCatalogModal({
                 </svg>
                 {shareCopied ? 'Enlace copiado' : 'Compartir'}
               </button>
-              <button className="availability-space-detail__close" type="button" aria-label="Cerrar detalle" onClick={() => onDetailChange(null)}>×</button>
+              <button
+                className="availability-space-detail__close"
+                type="button"
+                aria-label="Cerrar detalle"
+                onClick={() => {
+                  setCollapsedDetailKey(null)
+                  onDetailChange(null)
+                }}
+              >
+                ×
+              </button>
+              <button
+                className="availability-space-detail__toggle"
+                type="button"
+                aria-controls="availability-space-information"
+                aria-expanded={!detailInfoCollapsed}
+                aria-label={detailInfoCollapsed
+                  ? 'Mostrar información del medio'
+                  : 'Ocultar información del medio'}
+                onClick={() => setCollapsedDetailKey(
+                  detailInfoCollapsed ? null : detailKey,
+                )}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m9 5 7 7-7 7" />
+                </svg>
+              </button>
               <figure>
                 <img src={activeEntry.space.image.url} alt={activeEntry.space.image.alt} />
               </figure>
-              <div className="availability-space-detail__copy">
+              <div
+                className="availability-space-detail__copy"
+                id="availability-space-information"
+                aria-hidden={detailInfoCollapsed}
+                inert={detailInfoCollapsed}
+              >
                 <h2 id="availability-space-title">{activeEntry.space.name}</h2>
                 <p>{activeEntry.location.name}</p>
                 <strong>{activeEntry.space.description}</strong>
@@ -493,6 +848,7 @@ export function AvailabilityCatalogModal({
                 </div>
               </div>
             </section>
+            </div>
           </div>
         , document.body)}
 

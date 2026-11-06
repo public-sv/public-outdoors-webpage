@@ -1019,39 +1019,13 @@ export function GalleryScene() {
     })
   }
 
-  const openInnovationShowcase = (
-    event: React.MouseEvent<HTMLAnchorElement>,
-  ) => {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return
-    }
-
-    event.preventDefault()
-    const sourceBounds = event.currentTarget.getBoundingClientRect()
-
-    navigate('/innovaciones#imagina-tu-marca', {
-      state: {
-        backgroundLocation: location,
-        backgroundScrollY: window.scrollY,
-        transitionOrigin: {
-          x: sourceBounds.x,
-          y: sourceBounds.y,
-          width: sourceBounds.width,
-          height: sourceBounds.height,
-        },
-      },
-    })
-  }
-
   const renderHeadingActions = (
     collection: (typeof projectCollections)[number],
   ) => {
+    const availabilityType = collection.id === 'innovaciones'
+      ? 'innovations'
+      : collection.id
+
     return (
       <div className="collection-heading__actions">
         <Link
@@ -1076,45 +1050,24 @@ export function GalleryScene() {
           </svg>
         </Link>
 
-        {collection.id === 'innovaciones' ? (
-          <Link
-            className="collection-heading__availability"
-            to="/innovaciones#imagina-tu-marca"
-            onClick={openInnovationShowcase}
-            onPointerEnter={handleCtaPointerEnter}
-            onPointerLeave={handleCtaPointerLeave}
-            onFocus={handleCtaFocus}
-            onBlur={handleCtaBlur}
-          >
-            <span className="collection-heading__fluid" aria-hidden="true">
-              <i className="collection-heading__fluid-wave" />
-              <i className="collection-heading__fluid-wave" />
-              <i className="collection-heading__fluid-wave" />
-            </span>
-            <span className="collection-heading__availability-label">
-              Imagina tu marca aquí
-            </span>
-          </Link>
-        ) : (
-          <Link
-            className="collection-heading__availability"
-            to="/disponibilidad"
-            onPointerEnter={handleCtaPointerEnter}
-            onPointerLeave={handleCtaPointerLeave}
-            onFocus={handleCtaFocus}
-            onBlur={handleCtaBlur}
-            aria-label={`Ver disponibilidad de medios ${collection.label}`}
-          >
-            <span className="collection-heading__fluid" aria-hidden="true">
-              <i className="collection-heading__fluid-wave" />
-              <i className="collection-heading__fluid-wave" />
-              <i className="collection-heading__fluid-wave" />
-            </span>
-            <span className="collection-heading__availability-label">
-              Ver disponibilidad
-            </span>
-          </Link>
-        )}
+        <Link
+          className="collection-heading__availability"
+          to={`/disponibilidad?catalog=media-type&type=${availabilityType}`}
+          onPointerEnter={handleCtaPointerEnter}
+          onPointerLeave={handleCtaPointerLeave}
+          onFocus={handleCtaFocus}
+          onBlur={handleCtaBlur}
+          aria-label={`Ver disponibilidad de medios ${collection.label}`}
+        >
+          <span className="collection-heading__fluid" aria-hidden="true">
+            <i className="collection-heading__fluid-wave" />
+            <i className="collection-heading__fluid-wave" />
+            <i className="collection-heading__fluid-wave" />
+          </span>
+          <span className="collection-heading__availability-label">
+            Ver disponibilidad
+          </span>
+        </Link>
       </div>
     )
   }
@@ -1184,7 +1137,7 @@ export function GalleryScene() {
 
   return (
     <section className="project-grid-section" ref={section}>
-      <header className="grid-heading" data-scene-id="gallery-intro">
+      <header id="medios" className="grid-heading" data-scene-id="gallery-intro">
         <h2 aria-label="Donde las ideas se vuelven visibles.">
           <span className="grid-heading__line">
             <span>Donde tus ideas</span>
