@@ -76,9 +76,7 @@
 }
 
 .availability-page__eyebrow,
-.availability-explorer__label,
-.availability-explorer__photo-label,
-.availability-explorer__image-index {
+.availability-explorer__label {
   text-transform: uppercase;
 }
 
@@ -515,20 +513,24 @@
   pointer-events: none;
 }
 
-.availability-explorer__photo-label,
-.availability-explorer__image-index {
+.availability-explorer__image-open {
   position: absolute;
-  z-index: 1;
-  bottom: 1.2rem;
-  margin: 0;
-  color: rgb(247 245 239 / 75%);
-  font-size: .598rem;
-  font-weight: 750;
-  letter-spacing: .15em;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-x pan-y;
 }
 
-.availability-explorer__photo-label { left: 1.3rem; }
-.availability-explorer__image-index { right: 1.3rem; text-align: right; }
+.availability-explorer__image-open:focus-visible {
+  outline: 2px solid #f7f5ef;
+  outline-offset: -4px;
+}
 
 .availability-explorer__stage-actions {
   display: flex;
@@ -1183,15 +1185,6 @@
     max-width: 29rem;
     font-size: .897rem;
   }
-
-  .availability-explorer__photo-label,
-  .availability-explorer__image-index {
-    bottom: 1rem;
-    font-size: .529rem;
-  }
-
-  .availability-explorer__photo-label { left: 1rem; }
-  .availability-explorer__image-index { right: 1rem; }
 
   .availability-explorer__stage-heading {
     min-height: 4rem;

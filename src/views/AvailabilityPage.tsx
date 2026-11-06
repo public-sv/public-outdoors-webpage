@@ -100,8 +100,6 @@ export function AvailabilityPage({
     explorerView === 'locations'
       ? activeLocation.imageAlt
       : activeCategory.imageAlt
-  const activeImageLabel =
-    explorerView === 'locations' ? activeLocation.region : activeCategory.name
   const inventoryMedia =
     explorerView === 'locations'
       ? activeLocation.media.map((medium) => ({
@@ -162,9 +160,13 @@ export function AvailabilityPage({
     ? `${catalogLocationId}:${catalogSpaceId}`
     : null
 
-  const openCatalogModal = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const openCatalogModal = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    requestedItemId?: string,
+  ) => {
     const bounds = event.currentTarget.getBoundingClientRect()
-    const itemId = explorerView === 'locations' ? activeLocation.id : activeCategory.id
+    const itemId = requestedItemId
+      ?? (explorerView === 'locations' ? activeLocation.id : activeCategory.id)
     const key = `${explorerView}:${itemId}`
     const next = new URLSearchParams(searchParams)
 
@@ -191,13 +193,17 @@ export function AvailabilityPage({
     spaceId: string,
   ) => {
     const bounds = event.currentTarget.getBoundingClientRect()
-    const key = `locations:${locationId}`
+    const isCategoryView = explorerView === 'categories'
+    const key = isCategoryView
+      ? `categories:${activeCategory.id}`
+      : `locations:${locationId}`
     const next = new URLSearchParams(searchParams)
 
-    next.set('catalog', 'location')
+    next.set('catalog', isCategoryView ? 'media-type' : 'location')
     next.set('location', locationId)
     next.set('space', spaceId)
-    next.delete('type')
+    if (isCategoryView) next.set('type', activeCategory.id)
+    else next.delete('type')
     setCatalogOrigin({
       key,
       origin: {
@@ -990,12 +996,12 @@ export function AvailabilityPage({
                 draggable={false}
               />
               <div className="availability-explorer__image-shade" aria-hidden="true" />
-              <p className="availability-explorer__photo-label">
-                Fotografía / PUBLIC
-              </p>
-              <p className="availability-explorer__image-index">
-                {String(activeIndex + 1).padStart(2, '0')} — {activeImageLabel}
-              </p>
+              <button
+                className="availability-explorer__image-open"
+                type="button"
+                aria-label={`Ver disponibilidad de ${explorerItems[activeIndex]?.name}`}
+                onClick={openCatalogModal}
+              />
             </div>
 
             <div
@@ -1026,12 +1032,12 @@ export function AvailabilityPage({
                     decoding="async"
                   />
                   <div className="availability-explorer__image-shade" aria-hidden="true" />
-                  <p className="availability-explorer__photo-label">
-                    Fotografía / PUBLIC
-                  </p>
-                  <p className="availability-explorer__image-index">
-                    {String(index + 1).padStart(2, '0')} — {item.name}
-                  </p>
+                  <button
+                    className="availability-explorer__image-open"
+                    type="button"
+                    aria-label={`Ver disponibilidad de ${item.name}`}
+                    onClick={(event) => openCatalogModal(event, item.id)}
+                  />
                 </div>
               ))}
             </div>
