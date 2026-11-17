@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import butterflyAsset from '../assets/public-butterfly.svg'
+import whatsappIconAsset from '../assets/whatsapp-streamline.svg'
 import { gsap, useGSAP } from '../animation/gsap'
 import { prefersReducedMotion } from '../animation/motion'
 import type {
@@ -19,6 +20,7 @@ import {
 } from './WhatsAppContactChooser'
 
 const butterfly = assetUrl(butterflyAsset)
+const whatsappIcon = assetUrl(whatsappIconAsset)
 const emailContacts = [
   { email: 'outdoors.agencias@publicsv.net', name: 'Zayda' },
   { email: 'ventasdigital@publicsv.net', name: 'Iris' },
@@ -450,13 +452,19 @@ export function AvailabilitySelectionModal({
               disabled={!selectedEntries.length || Boolean(quoteAction)}
               onClick={() => void runQuoteAction('email')}
               aria-disabled={!selectedEntries.length || Boolean(quoteAction)}
-              aria-label="Enviar correo"
+              aria-label={quoteAction === 'email' ? 'Preparando correo' : 'Enviar correo'}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
-                <path d="m5 7 7 5 7-5" />
-              </svg>
-              <span>{quoteAction === 'email' ? 'Preparando…' : 'Enviar correo'}</span>
+              {quoteAction === 'email' ? (
+                <span className="availability-selection__spinner" aria-hidden="true" />
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+                  <path d="m5 7 7 5 7-5" />
+                </svg>
+              )}
+              <span className="availability-selection__action-label">
+                {quoteAction === 'email' ? 'Preparando…' : 'Enviar correo'}
+              </span>
             </button>
             <button
               className={selectedEntries.length ? undefined : 'is-disabled'}
@@ -464,26 +472,40 @@ export function AvailabilitySelectionModal({
               disabled={!selectedEntries.length || Boolean(quoteAction)}
               onClick={() => void runQuoteAction('whatsapp')}
               aria-disabled={!selectedEntries.length || Boolean(quoteAction)}
-              aria-label="Escribir por WhatsApp"
+              aria-label={quoteAction === 'whatsapp' ? 'Preparando WhatsApp' : 'Escribir por WhatsApp'}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20 11.6a8 8 0 0 1-11.8 7L4 20l1.4-4A8 8 0 1 1 20 11.6Z" />
-                <path d="M8.7 8.1c.5 2.5 2.5 4.5 5 5l1-1.1 2 .9c-.3 1.2-1.3 2-2.5 2-3.5-.2-6.6-3.2-6.8-6.8 0-1.2.8-2.2 2-2.5l.9 2-1.6.5Z" />
-              </svg>
-              <span>{quoteAction === 'whatsapp' ? 'Preparando…' : 'Escribir por WhatsApp'}</span>
+              {quoteAction === 'whatsapp' ? (
+                <span className="availability-selection__spinner" aria-hidden="true" />
+              ) : (
+                <img
+                  className="availability-selection__whatsapp-icon"
+                  src={whatsappIcon}
+                  alt=""
+                  aria-hidden="true"
+                />
+              )}
+              <span className="availability-selection__action-label">
+                {quoteAction === 'whatsapp' ? 'Preparando…' : 'Escribir por WhatsApp'}
+              </span>
             </button>
             <button
               className={selectedEntries.length ? undefined : 'is-disabled'}
               type="button"
               disabled={!selectedEntries.length || Boolean(quoteAction)}
-              aria-label="Generar PDF"
+              aria-label={quoteAction === 'download' ? 'Preparando PDF' : 'Generar PDF'}
               onClick={() => void runQuoteAction('download')}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 3.5h8l4 4v13H6Z" />
-                <path d="M14 3.5v4h4M8.5 16.5h7M8.5 13h7" />
-              </svg>
-              <span>{quoteAction === 'download' ? 'Preparando…' : 'Generar PDF'}</span>
+              {quoteAction === 'download' ? (
+                <span className="availability-selection__spinner" aria-hidden="true" />
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 3.5h8l4 4v13H6Z" />
+                  <path d="M14 3.5v4h4M8.5 16.5h7M8.5 13h7" />
+                </svg>
+              )}
+              <span className="availability-selection__action-label">
+                {quoteAction === 'download' ? 'Preparando…' : 'Generar PDF'}
+              </span>
             </button>
           </div>
         </section>
