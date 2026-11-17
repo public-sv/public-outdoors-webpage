@@ -10,3 +10,6 @@
 
 [context.branch-deploy.environment]
   NEXT_PUBLIC_ALLOW_INDEXING = "false"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

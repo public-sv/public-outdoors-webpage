@@ -99,9 +99,10 @@ continues using the local TypeScript catalog.
 ## Netlify
 
 `netlify.toml` runs `npm run lint && npm run build`, publishes `.next`, and pins
-Node.js 24.22.1. Netlify detects Next.js and provisions its OpenNext adapter
-automatically, including serverless functions for Route Handlers; do not pin a
-legacy `@netlify/plugin-nextjs` package.
+Node.js 24.22.1. Because the existing Netlify project predates the Next.js
+migration, the configuration explicitly enables the current
+`@netlify/plugin-nextjs` adapter so Netlify provisions serverless functions for
+Route Handlers. Do not use the legacy Runtime v4 adapter.
 
 Configure production values in Netlify under environment variables:
 
