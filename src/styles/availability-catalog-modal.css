@@ -1010,6 +1010,11 @@
   opacity: .65;
 }
 
+.availability-selection__required {
+  color: #f21d2f;
+  font-weight: 800;
+}
+
 .availability-selection__quote-error {
   margin: 1rem 0 0;
   color: #b30b12;

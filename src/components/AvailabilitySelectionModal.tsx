@@ -384,7 +384,9 @@ export function AvailabilitySelectionModal({
             )}
           </div>
           <label>
-            Tu nombre
+            <span>
+              Tu nombre <span className="availability-selection__required" aria-hidden="true">*</span>
+            </span>
             <input
               name="name"
               autoComplete="name"
@@ -395,7 +397,9 @@ export function AvailabilitySelectionModal({
             />
           </label>
           <label>
-            Tu correo
+            <span>
+              Tu correo <span className="availability-selection__required" aria-hidden="true">*</span>
+            </span>
             <input
               name="email"
               type="email"
@@ -418,7 +422,9 @@ export function AvailabilitySelectionModal({
             />
           </label>
           <label>
-            Cuéntanos tu idea
+            <span>
+              Cuéntanos tu idea <span className="availability-selection__required" aria-hidden="true">*</span>
+            </span>
             <textarea
               name="campaign-idea"
               autoComplete="off"
