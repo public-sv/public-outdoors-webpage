@@ -17,6 +17,13 @@ function isAllowedBrowserOrigin(request: Request) {
   const origin = request.headers.get('origin')
   if (!origin) return false
 
+  let originUrl: URL
+  try {
+    originUrl = new URL(origin)
+  } catch {
+    return false
+  }
+
   const allowedOrigins = new Set([new URL(request.url).origin])
   const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL
   if (configuredSiteUrl) {
@@ -27,7 +34,19 @@ function isAllowedBrowserOrigin(request: Request) {
     }
   }
 
-  return allowedOrigins.has(origin)
+  if (allowedOrigins.has(originUrl.origin)) return true
+
+  // Netlify exposes the site name to Functions at runtime. Allow only HTTPS
+  // production, branch-deploy, and immutable deploy hosts belonging to this
+  // exact Netlify site (for example, branch--site-name.netlify.app).
+  const netlifySiteName = process.env.SITE_NAME?.trim().toLowerCase()
+  if (!netlifySiteName || originUrl.protocol !== 'https:' || originUrl.port) {
+    return false
+  }
+
+  const netlifySiteHost = `${netlifySiteName}.netlify.app`
+  const originHost = originUrl.hostname.toLowerCase()
+  return originHost === netlifySiteHost || originHost.endsWith(`--${netlifySiteHost}`)
 }
 
 export async function POST(request: Request) {
