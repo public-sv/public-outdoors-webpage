@@ -17,7 +17,10 @@ import butterflyLogoAsset from '../assets/public-butterfly.svg'
 import whatsappIconAsset from '../assets/whatsapp-streamline.svg'
 import { assetUrl } from '../lib/assetUrl'
 import { isSafari } from '../platform/iosSafari'
-import { WhatsAppContactChooser } from './WhatsAppContactChooser'
+import {
+  getRandomZaydaFirst,
+  WhatsAppContactChooser,
+} from './WhatsAppContactChooser'
 
 const facebookIcon = assetUrl(facebookIconAsset)
 const instagramIcon = assetUrl(instagramIconAsset)
@@ -200,6 +203,7 @@ export function ContactCard({
   const [shareState, setShareState] = useState<ShareState>('idle')
   const [motionAccess, setMotionAccess] = useState<MotionAccessState>('idle')
   const [whatsappOpen, setWhatsappOpen] = useState(false)
+  const [zaydaFirst, setZaydaFirst] = useState(false)
   const useWhatsappSheet = whatsappOpen && window.matchMedia('(max-width: 829px)').matches
 
   useGSAP(
@@ -924,6 +928,7 @@ export function ContactCard({
       panelRef={whatsappPanel}
       titleId="contact-card-whatsapp-title"
       viewportSheet={useWhatsappSheet}
+      zaydaFirst={zaydaFirst}
     />
   ) : null
 
@@ -981,6 +986,8 @@ export function ContactCard({
               className="contact-card__mark"
               src={butterflyLogo}
               alt="Public"
+              width="45"
+              height="50"
             />
             <p>Hagamos visible tu próxima idea.</p>
             <h2 id={titleId}>
@@ -1016,7 +1023,10 @@ export function ContactCard({
                   className="contact-card__datum contact-card__reveal is-whatsapp"
                   type="button"
                   key={detail.id}
-                  onClick={() => setWhatsappOpen(true)}
+                  onClick={() => {
+                    setZaydaFirst(getRandomZaydaFirst())
+                    setWhatsappOpen(true)
+                  }}
                   aria-label={detail.actionLabel}
                   aria-haspopup="dialog"
                   aria-expanded={whatsappOpen}

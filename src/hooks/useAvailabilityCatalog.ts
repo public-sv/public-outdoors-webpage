@@ -45,20 +45,31 @@ export function useAvailabilityCatalog() {
   const [catalog, setCatalog] = useState<AvailabilityCatalog>(
     () => cachedCatalog?.value ?? fallbackAvailabilityCatalog,
   )
+  const [catalogSource, setCatalogSource] = useState<'loading' | 'live' | 'fallback'>(
+    () => cachedCatalog?.value ? 'live' : 'loading',
+  )
 
   useEffect(() => {
     let active = true
 
     requestCatalog()
       .then((payload) => {
-        if (active && payload) setCatalog(payload)
+        if (!active) return
+        if (payload) {
+          setCatalog(payload)
+          setCatalogSource('live')
+        } else {
+          setCatalogSource('fallback')
+        }
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (active) setCatalogSource('fallback')
+      })
 
     return () => {
       active = false
     }
   }, [])
 
-  return catalog
+  return { catalog, catalogSource }
 }

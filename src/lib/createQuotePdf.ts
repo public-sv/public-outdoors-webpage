@@ -1,15 +1,27 @@
+import {
+  quoteSchemaVersion,
+  quoteTotals,
+  type QuoteDocument,
+  type QuoteDocumentItem,
+} from './quote'
+
 export interface QuotePdfEntry {
   locationName: string
   name: string
   price: number
-  priceLabel: string
   url: string
 }
 
 interface QuotePdfOptions {
   campaignIdea: string
+  customerEmail?: string
   customerName: string
+  customerPhone?: string
   entries: QuotePdfEntry[]
+  issuedAt?: string
+  quoteId?: string
+  taxRate?: number
+  validDays?: number
 }
 
 interface PdfLink {
@@ -22,43 +34,34 @@ interface PdfPage {
   stream: string
 }
 
-const pageWidth = 595
-const pageHeight = 842
-const entriesPerPage = 10
+const pageWidth = 612
+const pageHeight = 792
+const background = '0.106 0.094 0.098'
+const white = '0.98 0.98 0.98'
+const muted = '0.78 0.76 0.77'
+const red = '0.97 0.035 0.075'
+const blue = '0.09 0.67 0.91'
+const green = '0.23 0.82 0.18'
+const tableBottom = 190
+const rowLineHeight = 10
+const minimumRowHeight = 28
+
+function addDays(isoDate: string, days: number) {
+  const date = new Date(isoDate)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString()
+}
 
 function pdfSafeText(value: string) {
   return value
     .replace(/[–—]/g, '-')
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
-    .replace(/[^\x20-\xFF]/g, '?')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[^\x20-\xFF]/g, '')
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
-}
-
-function wrapText(value: string, maxLength: number, maxLines = 3) {
-  const words = value.trim().split(/\s+/).filter(Boolean)
-  const lines: string[] = []
-  let line = ''
-
-  words.forEach((word) => {
-    const candidate = line ? `${line} ${word}` : word
-    if (candidate.length <= maxLength) {
-      line = candidate
-      return
-    }
-    if (line) lines.push(line)
-    line = word
-  })
-  if (line) lines.push(line)
-
-  if (lines.length > maxLines) {
-    const visible = lines.slice(0, maxLines)
-    visible[maxLines - 1] = `${visible[maxLines - 1].slice(0, maxLength - 3)}...`
-    return visible
-  }
-  return lines
 }
 
 function textLine(
@@ -67,81 +70,316 @@ function textLine(
   y: number,
   size: number,
   font: 'F1' | 'F2' = 'F1',
-  color = '0.969 0.961 0.937',
+  color = white,
 ) {
   return `${color} rg BT /${font} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${pdfSafeText(text)}) Tj ET\n`
 }
 
-function money(value: number) {
-  return `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)}`
+function estimatedTextWidth(text: string, size: number, font: 'F1' | 'F2') {
+  const width = [...text].reduce((total, character) => {
+    if (/[ilI1.,:;'|]/.test(character)) return total + 0.28
+    if (/[MW@%]/.test(character)) return total + 0.82
+    if (/[A-Z0-9$]/.test(character)) return total + 0.6
+    if (character === ' ') return total + 0.28
+    return total + 0.52
+  }, 0)
+
+  return width * size * (font === 'F2' ? 1.03 : 1)
 }
 
-function buildPage(
-  entries: QuotePdfEntry[],
-  options: QuotePdfOptions,
-  pageIndex: number,
-  pageCount: number,
+function textRight(
+  text: string,
+  rightX: number,
+  y: number,
+  size: number,
+  font: 'F1' | 'F2' = 'F1',
+  color = white,
 ) {
-  const total = options.entries.reduce((sum, entry) => sum + entry.price, 0)
-  const date = new Intl.DateTimeFormat('es-SV', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date())
-  let stream = '0.035 0.043 0.043 rg 0 0 595 842 re f\n'
-  const links: PdfLink[] = []
-  stream += '1 0.004 0.035 rg 0 830 198 12 re f\n'
-  stream += '0 0.69 0.957 rg 198 830 199 12 re f\n'
-  stream += '0.22 0.831 0.188 rg 397 830 198 12 re f\n'
-  stream += textLine('PUBLIC', 48, 772, 30, 'F2')
-  stream += textLine('COTIZACION DE DISPONIBILIDAD', 48, 741, 11, 'F2', '0.63 0.67 0.65')
-  stream += textLine(date.toUpperCase(), 422, 772, 8, 'F1', '0.63 0.67 0.65')
-  stream += textLine(`PAGINA ${pageIndex + 1} / ${pageCount}`, 462, 755, 7, 'F1', '0.45 0.5 0.48')
+  return textLine(text, rightX - estimatedTextWidth(text, size, font), y, size, font, color)
+}
 
-  if (pageIndex === 0) {
-    stream += textLine('CLIENTE', 48, 694, 7, 'F2', '0.45 0.5 0.48')
-    stream += textLine(options.customerName.trim() || 'Por definir', 48, 674, 13, 'F2')
-    stream += textLine('IDEA DE CAMPAÑA', 280, 694, 7, 'F2', '0.45 0.5 0.48')
-    const ideaLines = wrapText(options.campaignIdea || 'Por definir', 45, 2)
-    ideaLines.forEach((line, index) => {
-      stream += textLine(line, 280, 674 - index * 15, 10)
+function textCenter(
+  text: string,
+  centerX: number,
+  y: number,
+  size: number,
+  font: 'F1' | 'F2' = 'F1',
+  color = white,
+) {
+  return textLine(text, centerX - estimatedTextWidth(text, size, font) / 2, y, size, font, color)
+}
+
+function fillRect(x: number, y: number, width: number, height: number, color: string) {
+  return `${color} rg ${x} ${y} ${width} ${height} re f\n`
+}
+
+function wrapText(value: string, maxLength: number) {
+  const normalized = value.trim().replace(/\s+/g, ' ')
+  if (!normalized) return []
+
+  const lines: string[] = []
+  let line = ''
+
+  normalized.split(' ').forEach((word) => {
+    const chunks = word.length > maxLength
+      ? word.match(new RegExp(`.{1,${maxLength}}`, 'g')) ?? [word]
+      : [word]
+
+    chunks.forEach((chunk) => {
+      const candidate = line ? `${line} ${chunk}` : chunk
+      if (candidate.length <= maxLength) {
+        line = candidate
+        return
+      }
+      if (line) lines.push(line)
+      line = chunk
     })
-  }
-
-  stream += '0.16 0.19 0.18 RG 48 632 m 547 632 l S\n'
-  stream += textLine('MEDIOS SELECCIONADOS', 48, 608, 8, 'F2', '0.63 0.67 0.65')
-  stream += textLine('TARIFA', 478, 608, 8, 'F2', '0.63 0.67 0.65')
-
-  let y = 575
-  entries.forEach((entry) => {
-    stream += textLine(entry.name.toUpperCase(), 48, y, 11, 'F2')
-    stream += textLine(`${entry.locationName}  /  ${entry.priceLabel}`, 48, y - 16, 8, 'F1', '0.58 0.62 0.6')
-    stream += textLine('VER EN PUBLIC', 390, y - 16, 7, 'F2', '0 0.69 0.957')
-    stream += textLine(money(entry.price), 478, y - 1, 11, 'F2')
-    stream += `0.12 0.15 0.14 RG 48 ${y - 29} m 547 ${y - 29} l S\n`
-    links.push({
-      rect: [48, y - 24, 462, y + 15],
-      url: entry.url,
-    })
-    y -= 48
   })
 
-  if (pageIndex === pageCount - 1) {
-    const totalY = Math.max(92, y - 4)
-    stream += textLine('TOTAL ESTIMADO', 344, totalY, 9, 'F2', '0.63 0.67 0.65')
-    stream += textLine(money(total), 478, totalY - 1, 16, 'F2')
+  if (line) lines.push(line)
+  return lines
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('es-SV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(value))
+}
+
+function money(value: number) {
+  return `US$${new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value)}`
+}
+
+function drawBrand() {
+  let stream = ''
+  stream += 'q 0.78 0 0 -0.78 68 715 cm\n'
+  stream += `${blue} rg 43.0353 26.6296 m 44.4875 2.77441 l 34.9963 4.44748 l 35.902 16.4822 l 31.1837 39.0645 l 29.9401 43.0015 l 37.3543 37.6176 l 43.0353 26.6296 l h f\n`
+  stream += `${green} rg 37.3544 37.6178 m 21.248 49.1966 l 21.248 49.1966 19.4579 39.5513 31.8109 31.1765 c 36.144 30.2517 37.3556 37.6189 37.3556 37.6189 c 37.3544 37.6178 l h f\n`
+  stream += `${red} rg 0 46.4197 m 0 46.4197 3.40361 27.4772 22.162 26.1996 c 12.6293 18.3623 l 15.3678 2.7624 l 33.3853 0 l 43.0354 26.6294 l 37.3544 37.6174 l 8.36617 44.4104 l 0 46.4197 l h f\n`
+  stream += 'Q\n'
+  stream += textLine('PUBLIC', 108, 688, 31, 'F2')
+  stream += textLine('Espacios únicos para elevar tu marca', 110, 675, 7.5, 'F1', muted)
+  return stream
+}
+
+function drawFooter() {
+  let stream = ''
+  stream += textLine('(503) 2264-5458', 50, 24, 8, 'F1', muted)
+  stream += textLine('LinkedIn  Public Outdoors', 149, 24, 8, 'F1', muted)
+  stream += textLine('Facebook  Public Outdoors', 284, 24, 8, 'F1', muted)
+  stream += textLine('Instagram  publicoutdoors', 422, 24, 8, 'F1', muted)
+  stream += textLine('publicoutdoors.com', 438, 48, 15, 'F2')
+  return stream
+}
+
+function drawPageHeader(quote: QuoteDocument, pageIndex: number, pageCount: number) {
+  let stream = fillRect(0, 0, pageWidth, pageHeight, background)
+  stream += drawBrand()
+  stream += textLine(`Fecha: ${formatDate(quote.issuedAt)}`, 430, 704, 13)
+  if (pageCount > 1) {
+    stream += textLine(`Página ${pageIndex + 1} de ${pageCount}`, 473, 684, 8, 'F1', muted)
+  }
+  return stream
+}
+
+function drawCustomer(quote: QuoteDocument) {
+  const customerLines = wrapText(`Atención a: ${quote.customer.name || 'Por definir'}`, 48)
+  let y = 627
+  let stream = ''
+
+  customerLines.forEach((line) => {
+    stream += textLine(line, 74, y, 13, 'F2')
+    y -= 16
+  })
+  wrapText(`Correo: ${quote.customer.email}`, 64).forEach((line) => {
+    stream += textLine(line, 74, y, 11)
+    y -= 12
+  })
+  if (quote.customer.phone) {
+    wrapText(`Teléfono: ${quote.customer.phone}`, 64).forEach((line) => {
+      stream += textLine(line, 74, y, 11)
+      y -= 12
+    })
   }
 
-  stream += textLine(
-    'Precios en USD. Tarifas mensuales sin IVA. Disponibilidad sujeta a confirmacion.',
-    48,
-    48,
-    7,
-    'F1',
-    '0.45 0.5 0.48',
+  return { stream, tableY: y - 24 }
+}
+
+function drawTableHeader(y: number) {
+  let stream = fillRect(72, y, 476, 30, red)
+  stream += textLine('Medio', 84, y + 10, 10, 'F2')
+  stream += textCenter('Descripción', 334, y + 16, 9.5, 'F2')
+  stream += textCenter('Campaña', 334, y + 5, 9.5, 'F2')
+  stream += textCenter('Total Estimado', 493, y + 16, 8.8, 'F2')
+  stream += textCenter('US$', 493, y + 5, 8.8, 'F2')
+  return stream
+}
+
+function itemLayout(item: QuoteDocumentItem) {
+  const mediumLines = wrapText(item.medium, 26)
+  const locationLines = wrapText(item.locationName, 26)
+  const lineCount = Math.max(mediumLines.length + locationLines.length, 1)
+
+  return {
+    height: Math.max(minimumRowHeight, lineCount * rowLineHeight + 12),
+    locationLines,
+    mediumLines,
+  }
+}
+
+function drawItem(item: QuoteDocumentItem, topY: number, height?: number) {
+  const layout = itemLayout(item)
+  const rowHeight = height ?? layout.height
+  let stream = ''
+
+  layout.mediumLines.forEach((line, index) => {
+    stream += textLine(line, 82, topY - 13 - index * rowLineHeight, 8.5, 'F2')
+  })
+  layout.locationLines.forEach((line, index) => {
+    const lineOffset = layout.mediumLines.length + index
+    stream += textLine(line, 82, topY - 13 - lineOffset * rowLineHeight, 7.8, 'F1', muted)
+  })
+  stream += textRight(money(item.lineTotal), 540, topY - 13, 8.2, 'F2')
+  stream += `${muted} RG 0.3 w 78 ${topY - rowHeight} m 220 ${topY - rowHeight} l S\n`
+  stream += `${muted} RG 0.3 w 438 ${topY - rowHeight} m 542 ${topY - rowHeight} l S\n`
+
+  return { height: rowHeight, stream }
+}
+
+function drawCampaignDescription(lines: string[], topY: number, bottomY: number) {
+  if (!lines.length) return ''
+
+  const lineHeight = 11
+  const textHeight = (lines.length - 1) * lineHeight
+  let y = (topY + bottomY) / 2 + textHeight / 2 - 3
+  let stream = ''
+  lines.forEach((line) => {
+    stream += textCenter(line, 334, y, 8.5)
+    y -= lineHeight
+  })
+  return stream
+}
+
+function drawTotals(quote: QuoteDocument) {
+  const totals = quoteTotals(quote)
+  const labelRight = 440
+  const amountRight = 540
+  let stream = fillRect(76, 155, 472, 23, red)
+  stream += textRight('SUBTOTAL:', labelRight, 163, 10, 'F2')
+  stream += textRight(money(totals.subtotal), amountRight, 163, 10, 'F2')
+  stream += textRight('IVA:', labelRight, 141, 10, 'F2')
+  stream += textRight(money(totals.tax), amountRight, 141, 10, 'F2')
+  stream += textRight('TOTAL ESTIMADO:', labelRight, 116, 10, 'F2')
+  stream += textRight(money(totals.total), amountRight, 116, 12, 'F2')
+  return stream
+}
+
+function drawTerms(quote: QuoteDocument) {
+  const defaultNotes = [
+    'Los espacios publicitarios se asignan por orden de llegada y están sujetos a disponibilidad',
+    'al momento de la contratación. La emisión de esta cotización no reserva ni garantiza',
+    'los espacios solicitados.',
+    `Esta cotización tiene vigencia hasta el ${formatDate(quote.validUntil)}.`,
+  ]
+  const notes = quote.notes?.length ? quote.notes : defaultNotes
+  const lines = notes.flatMap((note) => wrapText(note, 105))
+  let stream = ''
+  lines.forEach((line, index) => {
+    stream += textLine(line, 76, 87 - index * 12, 8.5)
+  })
+  return stream
+}
+
+function paginateItems(
+  items: QuoteDocumentItem[],
+  firstTableY: number,
+  campaignDescriptionHeight: number,
+) {
+  const pages: QuoteDocumentItem[][] = []
+  let itemIndex = 0
+  let pageIndex = 0
+
+  while (itemIndex < items.length) {
+    const tableY = pageIndex === 0 ? firstTableY : 625
+    const contentTop = tableY - 5
+    let contentHeight = 0
+    const pageItems: QuoteDocumentItem[] = []
+
+    while (itemIndex < items.length) {
+      const item = items[itemIndex]
+      const height = itemLayout(item).height
+      const nextContentHeight = contentHeight + height
+      const effectiveHeight = Math.max(nextContentHeight, campaignDescriptionHeight)
+      const fits = contentTop - effectiveHeight >= tableBottom
+
+      if (!fits && pageItems.length) break
+      if (!fits && pageIndex === 0) break
+
+      pageItems.push(item)
+      itemIndex += 1
+      contentHeight = nextContentHeight
+    }
+
+    pages.push(pageItems)
+    pageIndex += 1
+  }
+
+  return pages
+}
+
+function buildPages(quote: QuoteDocument) {
+  const customer = drawCustomer(quote)
+  const campaignLines = wrapText(quote.campaign.idea, 36)
+  const campaignDescriptionHeight = campaignLines.length * 11 + 20
+  const itemPages = paginateItems(
+    quote.items,
+    customer.tableY,
+    campaignDescriptionHeight,
   )
-  stream += textLine('marketing@publicsv.net  /  +503 7840-0641', 48, 29, 7, 'F1', '0.45 0.5 0.48')
-  return { links, stream }
+  const pageCount = itemPages.length
+
+  return Array.from({ length: pageCount }, (_, pageIndex): PdfPage => {
+    const items = itemPages[pageIndex]
+    const lastPage = pageIndex === pageCount - 1
+    const links: PdfLink[] = []
+    let stream = drawPageHeader(quote, pageIndex, pageCount)
+
+    if (pageIndex === 0) stream += customer.stream
+
+    const tableY = pageIndex === 0 ? customer.tableY : 625
+    stream += drawTableHeader(tableY)
+    const naturalHeights = items.map((item) => itemLayout(item).height)
+    const naturalContentHeight = naturalHeights.reduce((sum, height) => sum + height, 0)
+    const contentHeight = Math.max(naturalContentHeight, campaignDescriptionHeight)
+    const rowHeights = [...naturalHeights]
+    if (rowHeights.length) {
+      rowHeights[rowHeights.length - 1] += contentHeight - naturalContentHeight
+    }
+    let cursorY = tableY - 5
+    items.forEach((item, itemIndex) => {
+      const rendered = drawItem(item, cursorY, rowHeights[itemIndex])
+      stream += rendered.stream
+      if (item.url) {
+        links.push({ rect: [78, cursorY - rendered.height, 542, cursorY], url: item.url })
+      }
+      cursorY -= rendered.height
+    })
+    stream += drawCampaignDescription(campaignLines, tableY - 5, tableY - 5 - contentHeight)
+
+    if (lastPage) {
+      stream += drawTotals(quote)
+      stream += drawTerms(quote)
+    }
+    stream += drawFooter()
+
+    return { links, stream }
+  })
 }
 
 function latin1Bytes(value: string) {
@@ -161,7 +399,6 @@ function createPdfBlob(pages: PdfPage[]) {
   objects.set(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>')
 
   let nextAnnotationObject = 5 + pages.length * 2
-
   pages.forEach(({ links, stream }, index) => {
     const pageObject = 5 + index * 2
     const streamObject = pageObject + 1
@@ -182,7 +419,7 @@ function createPdfBlob(pages: PdfPage[]) {
       pageObject,
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamObject} 0 R${annotations} >>`,
     )
-    objects.set(streamObject, `<< /Length ${stream.length} >>\nstream\n${stream}endstream`)
+    objects.set(streamObject, `<< /Length ${latin1Bytes(stream).length} >>\nstream\n${stream}endstream`)
   })
 
   objects.set(2, `<< /Type /Pages /Kids [${pageReferences.join(' ')}] /Count ${pages.length} >>`)
@@ -191,10 +428,10 @@ function createPdfBlob(pages: PdfPage[]) {
   let pdf = '%PDF-1.4\n%âãÏÓ\n'
   const offsets = [0]
   for (let objectNumber = 1; objectNumber <= objectCount; objectNumber += 1) {
-    offsets[objectNumber] = pdf.length
+    offsets[objectNumber] = latin1Bytes(pdf).length
     pdf += `${objectNumber} 0 obj\n${objects.get(objectNumber)}\nendobj\n`
   }
-  const xrefOffset = pdf.length
+  const xrefOffset = latin1Bytes(pdf).length
   pdf += `xref\n0 ${objectCount + 1}\n0000000000 65535 f \n`
   for (let objectNumber = 1; objectNumber <= objectCount; objectNumber += 1) {
     pdf += `${String(offsets[objectNumber]).padStart(10, '0')} 00000 n \n`
@@ -203,27 +440,45 @@ function createPdfBlob(pages: PdfPage[]) {
   return new Blob([latin1Bytes(pdf)], { type: 'application/pdf' })
 }
 
-export function createQuotePdfBlob(options: QuotePdfOptions) {
-  const pageCount = Math.ceil(options.entries.length / entriesPerPage)
-  const pages = Array.from({ length: pageCount }, (_, index) =>
-    buildPage(
-      options.entries.slice(index * entriesPerPage, (index + 1) * entriesPerPage),
-      options,
-      index,
-      pageCount,
-    ),
-  )
-  return createPdfBlob(pages)
+export function createQuotePdfBlob(quote: QuoteDocument) {
+  if (!quote.items.length) throw new Error('A quote requires at least one item')
+  return createPdfBlob(buildPages(quote))
+}
+
+export function quoteDocumentFromPdfOptions(options: QuotePdfOptions): QuoteDocument {
+  const issuedAt = options.issuedAt ?? new Date().toISOString()
+  const validDays = options.validDays ?? 7
+
+  return {
+    schemaVersion: quoteSchemaVersion,
+    quoteId: options.quoteId ?? crypto.randomUUID(),
+    issuedAt,
+    validUntil: addDays(issuedAt, validDays),
+    currency: 'USD',
+    taxRate: options.taxRate ?? 0.13,
+    customer: {
+      name: options.customerName,
+      email: options.customerEmail ?? '',
+      phone: options.customerPhone,
+    },
+    campaign: { idea: options.campaignIdea },
+    items: options.entries.map((entry) => ({
+      medium: entry.name,
+      locationName: entry.locationName,
+      lineTotal: entry.price,
+      url: entry.url,
+    })),
+  }
 }
 
 export function downloadQuotePdf(options: QuotePdfOptions) {
   if (!options.entries.length) return
 
-  const url = URL.createObjectURL(createQuotePdfBlob(options))
+  const quote = quoteDocumentFromPdfOptions(options)
+  const url = URL.createObjectURL(createQuotePdfBlob(quote))
   const download = document.createElement('a')
-  const date = new Date().toISOString().slice(0, 10)
   download.href = url
-  download.download = `cotizacion-public-${date}.pdf`
+  download.download = `cotizacion-public-${quote.issuedAt.slice(0, 10)}.pdf`
   document.body.append(download)
   download.click()
   download.remove()

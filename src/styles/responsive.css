@@ -959,28 +959,39 @@
   }
 
   .collection-carousel__pagination {
-    min-height: 2rem;
+    min-height: 2.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: .45rem;
+    gap: 0;
     margin-top: .8rem;
   }
 
   .collection-carousel__pagination button {
-    width: .42rem;
-    height: .42rem;
+    position: relative;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: rgb(247 245 239 / 28%);
+    background: transparent;
     cursor: pointer;
+  }
+
+  .collection-carousel__pagination button::after {
+    width: .42rem;
+    height: .42rem;
+    border-radius: inherit;
+    background: rgb(247 245 239 / 28%);
+    content: '';
     transition:
       width .28s cubic-bezier(.2, .8, .2, 1),
       background-color .28s ease;
   }
 
-  .collection-carousel__pagination button.is-active {
+  .collection-carousel__pagination button.is-active::after {
     width: 1.4rem;
     background: #f7f5ef;
   }

@@ -9,20 +9,43 @@ import type {
   AvailabilitySpace,
 } from '../data/availability'
 import { assetUrl } from '../lib/assetUrl'
-import { downloadQuotePdf } from '../lib/createQuotePdf'
-import { WhatsAppContactChooser } from './WhatsAppContactChooser'
+import type {
+  QuoteCreationRequest,
+  QuoteCreationResponse,
+} from '../lib/quote'
+import {
+  getRandomZaydaFirst,
+  WhatsAppContactChooser,
+} from './WhatsAppContactChooser'
 
 const butterfly = assetUrl(butterflyAsset)
+const emailContacts = [
+  { email: 'outdoors.agencias@publicsv.net', name: 'Zayda' },
+  { email: 'ventasdigital@publicsv.net', name: 'Iris' },
+] as const
+const naturalList = new Intl.ListFormat('es', {
+  style: 'long',
+  type: 'conjunction',
+})
+let cachedQuoteRequest: {
+  signature: string
+  promise: Promise<QuoteCreationResponse>
+} | null = null
 
 interface AvailabilitySelectionModalProps {
   catalog: AvailabilityCatalog
   selectedKeys: Set<string>
   customerName: string
+  customerEmail: string
+  customerPhone: string
   campaignIdea: string
+  quoteCatalogReady: boolean
   onClose: () => void
   onExploreCatalog: () => void
   onSelectedKeysChange: (next: Set<string>) => void
   onCustomerNameChange: (next: string) => void
+  onCustomerEmailChange: (next: string) => void
+  onCustomerPhoneChange: (next: string) => void
   onCampaignIdeaChange: (next: string) => void
 }
 
@@ -41,29 +64,42 @@ function entryKey(entry: SelectionEntry) {
   return `${entry.location.id}:${entry.space.id}`
 }
 
-function spaceUrl(locationId: string, spaceId: string) {
-  const url = new URL('/disponibilidad', window.location.origin)
-  url.searchParams.set('catalog', 'location')
-  url.searchParams.set('location', locationId)
-  url.searchParams.set('space', spaceId)
-  return url.toString()
+function emailRequestUrl(email: string, subject: string, requestCopy: string) {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(requestCopy)}`
+}
+
+function isQuoteCreationResponse(value: unknown): value is QuoteCreationResponse {
+  if (!value || typeof value !== 'object') return false
+  const response = value as Record<string, unknown>
+  return ['quoteId', 'pdfUrl', 'downloadUrl', 'expiresAt'].every(
+    (field) => typeof response[field] === 'string' && Boolean(response[field]),
+  )
 }
 
 export function AvailabilitySelectionModal({
   catalog,
   selectedKeys,
   customerName,
+  customerEmail,
+  customerPhone,
   campaignIdea,
+  quoteCatalogReady,
   onClose,
   onExploreCatalog,
   onSelectedKeysChange,
   onCustomerNameChange,
+  onCustomerEmailChange,
+  onCustomerPhoneChange,
   onCampaignIdeaChange,
 }: AvailabilitySelectionModalProps) {
   const closeButton = useRef<HTMLButtonElement>(null)
   const motion = useRef<HTMLDivElement>(null)
   const whatsappPanel = useRef<HTMLDivElement>(null)
   const [whatsappOpen, setWhatsappOpen] = useState(false)
+  const [zaydaFirst, setZaydaFirst] = useState(false)
+  const [quoteAction, setQuoteAction] = useState<'email' | 'whatsapp' | 'download' | null>(null)
+  const [quoteError, setQuoteError] = useState('')
+  const [activeQuote, setActiveQuote] = useState<QuoteCreationResponse | null>(null)
   const selectedEntries = useMemo(
     () => catalog.locations.flatMap((location) =>
       location.spaces
@@ -79,14 +115,128 @@ export function AvailabilitySelectionModal({
     onSelectedKeysChange(next)
   }
 
-  const requestCopy = [
-    customerName ? `Nombre: ${customerName}` : '',
-    campaignIdea ? `Idea de campaña: ${campaignIdea}` : '',
-    '',
-    'Medios seleccionados:',
-    ...selectedEntries.map(({ location, space }) =>
-      `- ${space.name} · ${location.name} · ${formatPrice.format(space.price)} ${space.price_label}`),
-  ].filter(Boolean).join('\n')
+  const createContactMessage = (contactName: string, pdfUrl: string) => {
+    const firstName = contactName.split(' ')[0]
+    const senderName = customerName.trim()
+    const idea = campaignIdea.trim()
+    const selection = naturalList.format(
+      selectedEntries.map(({ location, space }) => `${space.name} en ${location.name}`),
+    )
+    const selectionIntro = selectedEntries.length === 1
+      ? `incluye el espacio ${selection}`
+      : `incluye ${selectedEntries.length} espacios: ${selection}`
+
+    return [
+      `Hola, ${firstName}.`,
+      senderName
+        ? `Soy ${senderName}. Preparé una cotización para una próxima campaña con PUBLIC y me gustaría recibir tu asesoría.`
+        : 'Preparé una cotización para una próxima campaña con PUBLIC y me gustaría recibir tu asesoría.',
+      idea ? `La idea de campaña es: ${idea}` : '',
+      `La cotización ${selectionIntro}.`,
+      `Puedes revisarla aquí: ${pdfUrl}`,
+      '¿Podrías ayudarme a confirmar la disponibilidad y orientarme con los siguientes pasos?',
+      '¡Muchas gracias!',
+    ].filter(Boolean).join('\n\n')
+  }
+
+  const createQuoteRequest = () => {
+    const name = customerName.trim()
+    const email = customerEmail.trim()
+    const phone = customerPhone.trim()
+    const idea = campaignIdea.trim()
+
+    if (!quoteCatalogReady) {
+      throw new Error('No pudimos validar el catálogo actual. Intenta nuevamente en unos minutos.')
+    }
+    if (!selectedEntries.length) throw new Error('Selecciona al menos un espacio.')
+    if (!name) throw new Error('Ingresa tu nombre.')
+    if (!email) throw new Error('Ingresa tu correo electrónico.')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('Ingresa un correo electrónico válido.')
+    }
+    if (!idea) throw new Error('Cuéntanos la idea de tu campaña.')
+
+    return {
+      customer: {
+        name,
+        email,
+        ...(phone ? { phone } : {}),
+      },
+      campaign: { idea },
+      selections: selectedEntries.map(({ location, space }) => ({
+        locationId: location.id,
+        spaceId: space.id,
+      })),
+    } satisfies QuoteCreationRequest
+  }
+
+  const getOrCreateQuote = async () => {
+    const request = createQuoteRequest()
+    const signature = JSON.stringify(request)
+    if (cachedQuoteRequest?.signature === signature) {
+      return cachedQuoteRequest.promise
+    }
+
+    const promise = fetch('/api/quotes', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    }).then(async (response) => {
+      const payload: unknown = await response.json().catch(() => null)
+      if (!response.ok || !isQuoteCreationResponse(payload)) {
+        const message = payload && typeof payload === 'object' && 'error' in payload
+          && typeof payload.error === 'string'
+          ? payload.error
+          : 'No fue posible generar la cotización.'
+        throw new Error(message)
+      }
+      return payload
+    })
+
+    cachedQuoteRequest = { signature, promise }
+    try {
+      return await promise
+    } catch (error) {
+      if (cachedQuoteRequest?.promise === promise) cachedQuoteRequest = null
+      throw error
+    }
+  }
+
+  const runQuoteAction = async (action: 'email' | 'whatsapp' | 'download') => {
+    setQuoteError('')
+    setQuoteAction(action)
+    try {
+      const quote = await getOrCreateQuote()
+      setActiveQuote(quote)
+
+      if (action === 'email') {
+        const contact = emailContacts[Math.floor(Math.random() * emailContacts.length)]
+        const subjectName = customerName.trim()
+        window.location.href = emailRequestUrl(
+          contact.email,
+          `Cotización PUBLIC${subjectName ? ` - ${subjectName}` : ''}`,
+          createContactMessage(contact.name, quote.pdfUrl),
+        )
+      } else if (action === 'whatsapp') {
+        setZaydaFirst(getRandomZaydaFirst())
+        setWhatsappOpen(true)
+      } else {
+        const download = document.createElement('a')
+        download.href = quote.downloadUrl
+        download.rel = 'noreferrer'
+        document.body.append(download)
+        download.click()
+        download.remove()
+      }
+    } catch (error) {
+      setQuoteError(error instanceof Error ? error.message : 'No fue posible generar la cotización.')
+    } finally {
+      setQuoteAction(null)
+    }
+  }
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -238,9 +388,33 @@ export function AvailabilitySelectionModal({
             <input
               name="name"
               autoComplete="name"
+              required
               value={customerName}
               onChange={(event) => onCustomerNameChange(event.target.value)}
               placeholder="Nombre y apellido"
+            />
+          </label>
+          <label>
+            Tu correo
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={customerEmail}
+              onChange={(event) => onCustomerEmailChange(event.target.value)}
+              placeholder="nombre@empresa.com"
+            />
+          </label>
+          <label>
+            <span>Tu teléfono <small>(opcional)</small></span>
+            <input
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              value={customerPhone}
+              onChange={(event) => onCustomerPhoneChange(event.target.value)}
+              placeholder="+503 7000-0000"
             />
           </label>
           <label>
@@ -248,72 +422,74 @@ export function AvailabilitySelectionModal({
             <textarea
               name="campaign-idea"
               autoComplete="off"
+              required
               value={campaignIdea}
               onChange={(event) => onCampaignIdeaChange(event.target.value)}
               placeholder="Marca, fechas o formatos de interés"
               rows={3}
             />
           </label>
-          <div className="availability-selection__actions">
-            <a
+          {quoteError && (
+            <p className="availability-selection__quote-error" role="alert">
+              {quoteError}
+            </p>
+          )}
+          <div
+            className="availability-selection__actions"
+            aria-busy={Boolean(quoteAction)}
+          >
+            <button
               className={selectedEntries.length ? undefined : 'is-disabled'}
-              href={selectedEntries.length ? `mailto:marketing@publicsv.net?subject=${encodeURIComponent('Consulta de disponibilidad PUBLIC')}&body=${encodeURIComponent(requestCopy)}` : undefined}
-              aria-disabled={!selectedEntries.length}
+              type="button"
+              disabled={!selectedEntries.length || Boolean(quoteAction)}
+              onClick={() => void runQuoteAction('email')}
+              aria-disabled={!selectedEntries.length || Boolean(quoteAction)}
               aria-label="Enviar correo"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
                 <path d="m5 7 7 5 7-5" />
               </svg>
-              <span>Enviar correo</span>
-            </a>
+              <span>{quoteAction === 'email' ? 'Preparando…' : 'Enviar correo'}</span>
+            </button>
             <button
               className={selectedEntries.length ? undefined : 'is-disabled'}
               type="button"
-              disabled={!selectedEntries.length}
-              onClick={() => setWhatsappOpen(true)}
-              aria-disabled={!selectedEntries.length}
+              disabled={!selectedEntries.length || Boolean(quoteAction)}
+              onClick={() => void runQuoteAction('whatsapp')}
+              aria-disabled={!selectedEntries.length || Boolean(quoteAction)}
               aria-label="Escribir por WhatsApp"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M20 11.6a8 8 0 0 1-11.8 7L4 20l1.4-4A8 8 0 1 1 20 11.6Z" />
                 <path d="M8.7 8.1c.5 2.5 2.5 4.5 5 5l1-1.1 2 .9c-.3 1.2-1.3 2-2.5 2-3.5-.2-6.6-3.2-6.8-6.8 0-1.2.8-2.2 2-2.5l.9 2-1.6.5Z" />
               </svg>
-              <span>Escribir por WhatsApp</span>
+              <span>{quoteAction === 'whatsapp' ? 'Preparando…' : 'Escribir por WhatsApp'}</span>
             </button>
             <button
               className={selectedEntries.length ? undefined : 'is-disabled'}
               type="button"
-              disabled={!selectedEntries.length}
+              disabled={!selectedEntries.length || Boolean(quoteAction)}
               aria-label="Generar PDF"
-              onClick={() => downloadQuotePdf({
-                customerName,
-                campaignIdea,
-                entries: selectedEntries.map(({ location, space }) => ({
-                  locationName: location.name,
-                  name: space.name,
-                  price: space.price,
-                  priceLabel: space.price_label,
-                  url: spaceUrl(location.id, space.id),
-                })),
-              })}
+              onClick={() => void runQuoteAction('download')}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 3.5h8l4 4v13H6Z" />
                 <path d="M14 3.5v4h4M8.5 16.5h7M8.5 13h7" />
               </svg>
-              <span>Generar PDF</span>
+              <span>{quoteAction === 'download' ? 'Preparando…' : 'Generar PDF'}</span>
             </button>
           </div>
         </section>
       </div>
-      {whatsappOpen && (
+      {whatsappOpen && activeQuote && (
         <WhatsAppContactChooser
-          message={requestCopy}
+          message={(contact) => createContactMessage(contact.name, activeQuote.pdfUrl)}
           onClose={() => setWhatsappOpen(false)}
           panelRef={whatsappPanel}
           titleId="availability-selection-whatsapp-title"
           viewportSheet
+          zaydaFirst={zaydaFirst}
         />
       )}
     </div>,

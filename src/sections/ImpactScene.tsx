@@ -197,6 +197,7 @@ function ClientLogoGrid() {
   return (
     <div
       className="clients-list"
+      role="group"
       aria-label="Logotipos de nuestros clientes"
       ref={list}
     >
@@ -605,9 +606,8 @@ export function ImpactScene() {
       <div className="impact-track" ref={track}>
         {metrics.map((metric, index) => (
           <article className="impact-metric" key={metric.value}>
-            <strong aria-label={metric.value}>
+            <strong>
               <span
-                aria-hidden="true"
                 data-target={index < 3 ? metric.value : undefined}
                 ref={
                   index < 3

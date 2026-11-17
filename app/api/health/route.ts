@@ -10,6 +10,9 @@ export function GET() {
       catalogConfigured: Boolean(
         process.env.CATALOG_API_URL && process.env.CATALOG_API_KEY,
       ),
+      quoteConfigured: Boolean(
+        process.env.QUOTE_API_URL && process.env.CATALOG_API_KEY,
+      ),
       timestamp: new Date().toISOString(),
     },
     { headers: { 'Cache-Control': 'no-store' } },

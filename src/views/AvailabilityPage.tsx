@@ -930,8 +930,8 @@ export function AvailabilityPage({
             </div>
             <p className="availability-explorer__hint">
               {explorerView === 'locations'
-                ? 'Usa las flechas o elige una ubicación.'
-                : 'Explora los medios por categoría.'}
+                ? 'Explora nuestros medios por ubicación'
+                : 'Explora nuestros medios por categoría.'}
             </p>
           </aside>
 
@@ -1155,17 +1155,18 @@ export function AvailabilityPage({
             role="tabpanel"
             aria-labelledby="availability-tab-digital"
           >
-            <h2>Cotiza tu campaña en pantallas digitales.</h2>
+            <h2>Eleva tu marca en pantallas digitales.</h2>
             <p className="availability-explorer__digital-copy">
-              Contacta a nuestro equipo de ventas para conocer formatos,
-              ubicaciones y disponibilidad para tu campaña.
+                Imagina tu marca en las pantallas que tu público ve todos los días. Contáctanos y una
+                especialista en medios te ayudará a elegir las ubicaciones y los formatos ideales para
+                elevar tu marca.
             </p>
             <button
               className="availability-explorer__digital-contact"
               type="button"
               onClick={onContact}
             >
-              Contactar a ventas
+                Contacta a nuestra especialista de medios
               <span aria-hidden="true">↗</span>
             </button>
           </div>

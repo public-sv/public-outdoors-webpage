@@ -1004,6 +1004,20 @@
   font-size: .828rem;
 }
 
+.availability-selection__panel label small {
+  color: inherit;
+  font: inherit;
+  opacity: .65;
+}
+
+.availability-selection__quote-error {
+  margin: 1rem 0 0;
+  color: #b30b12;
+  font-size: .782rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
 .availability-selection__panel input,
 .availability-selection__panel textarea {
   width: 100%;

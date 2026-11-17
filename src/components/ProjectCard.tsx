@@ -16,6 +16,7 @@ export function ProjectCard({ project, collectionId, index }: ProjectCardProps) 
         <div className="card-visual card-visual--image">
           <LightboxImage
             src={project.image}
+            previewSrc={project.thumbnail}
             alt={project.alt ?? project.title}
             caption={project.title}
             triggerClassName="image-lightbox-trigger--fill"

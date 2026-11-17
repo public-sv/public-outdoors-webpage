@@ -44,7 +44,8 @@ app/
 ├── [[...slug]]/page.tsx  # Existing public routes and route metadata
 ├── api/
 │   ├── catalog/route.ts  # Server-only catalog API gateway
-│   └── health/route.ts   # Deployment/readiness endpoint
+│   ├── health/route.ts   # Deployment/readiness endpoint
+│   └── quotes/route.ts   # Server-only quote API gateway
 ├── layout.tsx            # Root document and global styles
 ├── robots.ts             # Environment-aware crawler policy
 └── sitemap.ts            # Production sitemap
@@ -71,6 +72,7 @@ Copy `.env.example` to `.env.local` for local overrides.
 | `CATALOG_API_URL` | Server only | HTTPS endpoint used by `/api/catalog`. |
 | `CATALOG_API_KEY` | Server only | Required private key sent only by the server. |
 | `CATALOG_API_KEY_HEADER` | Server only | Header used for the key; defaults to `X-API-Key`. |
+| `QUOTE_API_URL` | Server only | HTTPS quote endpoint used by `/api/quotes`; reuses the catalog API key. |
 
 Never prefix API secrets with `NEXT_PUBLIC_`. Netlify Deploy Previews and branch
 deploys explicitly disable indexing in `netlify.toml`.
@@ -82,6 +84,10 @@ deploys explicitly disable indexing in `netlify.toml`.
 - `GET /api/catalog` forwards query parameters to the configured HTTPS catalog
   endpoint from the server. If the endpoint is not configured it returns `503`;
   upstream failures return `502`.
+- `POST /api/quotes` validates and forwards the exact `{ customer, campaign,
+  selections }` body to the private quote endpoint. The catalog IDs are taken
+  directly from the live catalog objects, and the API key never reaches the
+  browser.
 
 The gateway applies a 10-second timeout, requires JSON responses, caches each
 request variant for five minutes, and keeps `CATALOG_API_KEY` off the client.
@@ -105,6 +111,7 @@ NEXT_PUBLIC_ALLOW_INDEXING=true
 CATALOG_API_URL=https://aowlcmxyfvvqbxgykvaj.supabase.co/functions/v1/public-catalog
 CATALOG_API_KEY=<secret>
 CATALOG_API_KEY_HEADER=X-API-Key
+QUOTE_API_URL=https://aowlcmxyfvvqbxgykvaj.supabase.co/functions/v1/public-quote
 ```
 
 After changing an environment variable, trigger a new deploy. Keep preview
@@ -117,9 +124,16 @@ release, run:
 
 ```bash
 npm ci
-npm audit
+npm audit --omit=dev
 npm run check
 ```
 
 Dependabot is configured to propose weekly npm and GitHub Actions updates.
 Review major framework updates in a Deploy Preview before merging them.
+GitHub Actions also installs the locked dependency tree, audits production
+dependencies, and runs the complete release check on pull requests and pushes
+to `main`.
+
+The full development-tree audit may temporarily report upstream advisories in
+build tools that are not shipped to production. Review those separately rather
+than applying forced downgrades; the production audit must remain clean.

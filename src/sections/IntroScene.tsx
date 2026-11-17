@@ -1040,7 +1040,7 @@ export function IntroScene({
       aria-label="Public Outdoors introduction"
     >
       <div className="reduced-intro-prelude" ref={reducedPrelude}>
-        <img src={butterfly} alt="Public" />
+        <img src={butterfly} alt="Public" width="45" height="50" />
       </div>
 
       <div className="reveal-content" ref={content}>
@@ -1096,6 +1096,9 @@ export function IntroScene({
             ref={mobileLogo}
             src={butterfly}
             alt=""
+            width="45"
+            height="50"
+            fetchPriority="high"
           />
         </div>
       </div>

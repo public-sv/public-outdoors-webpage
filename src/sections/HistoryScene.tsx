@@ -181,7 +181,7 @@ export function HistoryScene({ onContact }: { onContact: () => void }) {
         })
 
         reveal
-          .fromTo(content, { opacity: 0.25 }, { opacity: 1, duration: 1, ease: 'none' })
+          .fromTo(content, { opacity: 0.55 }, { opacity: 1, duration: 1, ease: 'none' })
           .fromTo(
             dot,
             { backgroundColor: '#414141' },
@@ -193,7 +193,7 @@ export function HistoryScene({ onContact }: { onContact: () => void }) {
       if (outroTitle) {
         gsap.fromTo(
           outroTitle,
-          { opacity: 0.25 },
+          { opacity: 0.55 },
           {
             opacity: 1,
             ease: 'none',

@@ -6,12 +6,19 @@ export const whatsappContacts = [
   { name: 'Rosemary Daboub', number: '+503 7855 7192', whatsapp: '50378557192' },
 ]
 
+export function getRandomZaydaFirst() {
+  return Math.random() < .5
+}
+
+type WhatsAppContact = (typeof whatsappContacts)[number]
+
 interface WhatsAppContactChooserProps {
-  message?: string
+  message?: string | ((contact: WhatsAppContact) => string)
   onClose: () => void
   panelRef?: Ref<HTMLDivElement>
   titleId: string
   viewportSheet?: boolean
+  zaydaFirst: boolean
 }
 
 export function WhatsAppContactChooser({
@@ -20,7 +27,13 @@ export function WhatsAppContactChooser({
   panelRef,
   titleId,
   viewportSheet = false,
+  zaydaFirst,
 }: WhatsAppContactChooserProps) {
+  const [iris, zayda, rosemary] = whatsappContacts
+  const orderedContacts = zaydaFirst
+    ? [zayda, iris, rosemary]
+    : [iris, zayda, rosemary]
+
   return (
     <div
       className={`contact-card__whatsapp-panel${viewportSheet ? ' is-viewport-sheet' : ''}`}
@@ -52,8 +65,13 @@ export function WhatsAppContactChooser({
         </header>
 
         <div className="contact-card__whatsapp-list">
-          {whatsappContacts.map((contact) => {
-            const query = message ? `?text=${encodeURIComponent(message)}` : ''
+          {orderedContacts.map((contact) => {
+            const contactMessage = typeof message === 'function'
+              ? message(contact)
+              : message
+            const query = contactMessage
+              ? `?text=${encodeURIComponent(contactMessage)}`
+              : ''
 
             return (
               <a

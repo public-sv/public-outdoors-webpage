@@ -29,6 +29,7 @@ interface LightboxImageProps
   extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'alt' | 'src'> {
   alt: string
   caption?: string
+  previewSrc?: string
   src: string
   triggerAriaHidden?: boolean
   triggerClassName?: string
@@ -127,6 +128,7 @@ export function ImageLightboxProvider({
 export function LightboxImage({
   alt,
   caption,
+  previewSrc,
   src,
   triggerAriaHidden,
   triggerClassName = '',
@@ -150,7 +152,7 @@ export function LightboxImage({
         lightbox.openImage({ alt, caption, src }, event.currentTarget)
       }
     >
-      <img src={src} alt={alt} {...imageProps} />
+      <img src={previewSrc ?? src} alt={alt} {...imageProps} />
     </button>
   )
 }

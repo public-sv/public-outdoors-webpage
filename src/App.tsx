@@ -192,13 +192,17 @@ function App() {
 
     requestAnimationFrame(() => requestAnimationFrame(scrollToCatalog))
   }, [location.pathname, navigate])
-  const catalog = useAvailabilityCatalog()
+  const { catalog, catalogSource } = useAvailabilityCatalog()
   const {
     selectedKeys,
     customerName,
+    customerEmail,
+    customerPhone,
     campaignIdea,
     setSelectedKeys,
     setCustomerName,
+    setCustomerEmail,
+    setCustomerPhone,
     setCampaignIdea,
   } = useAvailabilitySelection()
   const backgroundLocation =
@@ -247,11 +251,16 @@ function App() {
           catalog={catalog}
           selectedKeys={selectedKeys}
           customerName={customerName}
+          customerEmail={customerEmail}
+          customerPhone={customerPhone}
           campaignIdea={campaignIdea}
+          quoteCatalogReady={catalogSource === 'live'}
           onClose={closeSelection}
           onExploreCatalog={exploreAvailabilityCatalog}
           onSelectedKeysChange={setSelectedKeys}
           onCustomerNameChange={setCustomerName}
+          onCustomerEmailChange={setCustomerEmail}
+          onCustomerPhoneChange={setCustomerPhone}
           onCampaignIdeaChange={setCampaignIdea}
         />
       )}
